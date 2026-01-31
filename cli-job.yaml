@@ -8,6 +8,15 @@ spec:
     metadata:
       name: openclaw-cli
     spec:
+      initContainers:
+      - name: setup-directories
+        image: busybox:latest
+        command: ["sh", "-c", "mkdir -p /home/node/.openclaw /home/node/.openclaw/workspace"]
+        volumeMounts:
+        - name: openclaw-config
+          mountPath: /home/node/.openclaw
+        - name: openclaw-workspace
+          mountPath: /home/node/.openclaw/workspace
       restartPolicy: Never
       containers:
       - name: cli
