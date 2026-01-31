@@ -17,7 +17,7 @@ spec:
     spec:
       initContainers:
       - name: setup-directories
-        image: ghcr.io/openclaw/openclaw:latest
+        image: busybox:latest
         command: ["sh", "-c", "mkdir -p /home/node/.openclaw /home/node/.openclaw/workspace"]
         volumeMounts:
         - name: openclaw-config
