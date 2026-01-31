@@ -137,7 +137,15 @@ spec:
     metadata:
       name: openclaw-onboarding
     spec:
-      restartPolicy: Never
+      initContainers:
+      - name: setup-directories
+        image: busybox:latest
+        command: ["sh", "-c", "mkdir -p /home/node/.openclaw /home/node/.openclaw/workspace"]
+        volumeMounts:
+        - name: openclaw-config
+          mountPath: /home/node/.openclaw
+        - name: openclaw-workspace
+          mountPath: /home/node/.openclaw/workspace
       containers:
       - name: onboard
         image: $IMAGE
