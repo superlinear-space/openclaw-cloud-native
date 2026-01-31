@@ -109,6 +109,11 @@ setup() {
 
 run_cli() {
   local job_name="openclaw-cli-$(date +%s)"
+  local node_selector_config=""
+  if [[ -n "${OPENCLAW_NODE_SELECTOR:-}" ]]; then
+    node_selector_config="      nodeSelector:
+        ${OPENCLAW_NODE_SELECTOR}"
+  fi
   local job_override
   job_override="apiVersion: batch/v1
 kind: Job
@@ -120,6 +125,7 @@ spec:
     metadata:
       name: openclaw-cli
     spec:
+${node_selector_config}
       restartPolicy: Never
       containers:
       - name: cli

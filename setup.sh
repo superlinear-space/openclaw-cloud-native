@@ -126,6 +126,11 @@ echo "  - Install Gateway daemon: No"
 echo ""
 
 echo "==> Creating onboarding job..."
+local node_selector_config=""
+if [[ -n "${OPENCLAW_NODE_SELECTOR:-}" ]]; then
+  node_selector_config="        nodeSelector:
+          ${OPENCLAW_NODE_SELECTOR}"
+fi
 cat <<EOF | kubectl apply -f -
 apiVersion: batch/v1
 kind: Job
@@ -137,6 +142,7 @@ spec:
     metadata:
       name: openclaw-onboarding
     spec:
+${node_selector_config}
       initContainers:
       - name: setup-directories
         image: busybox:latest
