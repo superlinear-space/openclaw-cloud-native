@@ -1,0 +1,24 @@
+# Temporary files
+*.tmp
+*.temp
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+
+# Kubernetes namespace errors (if accidentally committed)
+namespace.yaml.bak
+
+# Override configs for local testing
+*-override.yaml
+*-local.yaml
