@@ -10,6 +10,12 @@ variable "container_image" {
   default     = "ghcr.io/openclaw/openclaw:latest"
 }
 
+variable "busybox_image" {
+  description = "Busybox image used for init containers"
+  type        = string
+  default     = "busybox:latest"
+}
+
 variable "gateway_token" {
   description = "Gateway authentication token (auto-generated if empty)"
   type        = string
@@ -56,6 +62,30 @@ variable "workspace_storage_size" {
   description = "Storage size for workspace PVC"
   type        = string
   default     = "5Gi"
+}
+
+variable "use_hostpath" {
+  description = "Use hostPath instead of PVC for storage (useful for development)"
+  type        = bool
+  default     = false
+}
+
+variable "fix_hostpath_permissions" {
+  description = "Automatically fix hostPath permissions (chown 1000:1000, chmod 700)"
+  type        = bool
+  default     = true
+}
+
+variable "config_hostpath" {
+  description = "Host path for config directory (required if use_hostpath=true)"
+  type        = string
+  default     = "/var/lib/openclaw/config"
+}
+
+variable "workspace_hostpath" {
+  description = "Host path for workspace directory (required if use_hostpath=true)"
+  type        = string
+  default     = "/var/lib/openclaw/workspace"
 }
 
 variable "node_selector" {
@@ -96,100 +126,8 @@ variable "create_onboarding_job" {
   default     = false
 }
 
-variable "container_image" {
-  description = "Container image for OpenClaw"
-  type        = string
-  default     = "ghcr.io/openclaw/openclaw:latest"
-}
-
-variable "gateway_token" {
-  description = "Gateway authentication token (auto-generated if empty)"
-  type        = string
-  default     = ""
-}
-
-variable "gateway_replicas" {
-  description = "Number of gateway replicas"
-  type        = number
-  default     = 1
-}
-
-variable "gateway_bind" {
-  description = "Gateway bind mode (lan, loopback, or public)"
-  type        = string
-  default     = "lan"
-}
-
-variable "gateway_port" {
-  description = "Gateway service port"
-  type        = number
-  default     = 18789
-}
-
-variable "bridge_port" {
-  description = "Bridge service port"
-  type        = number
-  default     = 18790
-}
-
-variable "service_type" {
-  description = "Kubernetes service type (LoadBalancer, NodePort, ClusterIP)"
-  type        = string
-  default     = "LoadBalancer"
-}
-
-variable "config_storage_size" {
-  description = "Storage size for config PVC"
-  type        = string
-  default     = "1Gi"
-}
-
-variable "workspace_storage_size" {
-  description = "Storage size for workspace PVC"
-  type        = string
-  default     = "5Gi"
-}
-
-variable "node_selector" {
-  description = "Node selector labels for pod scheduling"
-  type        = map(string)
-  default = {
-    "openclaw-enabled" = "true"
-  }
-}
-
-variable "claude_ai_session_key" {
-  description = "Claude AI session key (optional)"
-  type        = string
-  default     = ""
-}
-
-variable "claude_web_session_key" {
-  description = "Claude web session key (optional)"
-  type        = string
-  default     = ""
-}
-
-variable "claude_web_cookie" {
-  description = "Claude web cookie (optional)"
-  type        = string
-  default     = ""
-}
-
-variable "cli_commands" {
-  description = "Map of CLI commands to run as jobs (format: {\"name\" = \"command\"})"
-  type        = map(string)
-  default     = {}
-}
-
-variable "create_onboarding_job" {
-  description = "Whether to create the onboarding job"
+variable "create_gateway_deployment" {
+  description = "Whether to create the gateway deployment"
   type        = bool
-  default     = false
-}
-
-variable "onboarding_token" {
-  description = "Token to use for onboarding (will be generated if empty)"
-  type        = string
-  default     = ""
+  default     = true
 }

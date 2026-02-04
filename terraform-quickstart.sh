@@ -16,35 +16,17 @@ check_cmd() {
 check_cmd terraform
 check_cmd kubectl
 
-if [[ ! -f "terraform.tfvars" ]]; then
-  cat <<'EOF' > terraform.tfvars
-# OpenClaw Configuration
-namespace = "openclaw"
-container_image = "ghcr.io/openclaw/openclaw:latest"
+if [[ ! -f "terraform.tfvars.example" ]]; then
+  echo "Error: terraform.tfvars.example not found"
+  exit 1
+fi
 
-# Gateway Settings
-gateway_replicas = 1
-gateway_bind = "lan"
-service_type = "LoadBalancer"
-
-# Storage
-config_storage_size = "1Gi"
-workspace_storage_size = "5Gi"
-
-# Node Scheduling (label your nodes with: kubectl label nodes <node-name> openclaw-enabled=true)
-node_selector = {
-  "openclaw-enabled" = "true"
-}
-
-# Optional: Claude AI Integration
-claude_ai_session_key = ""
-claude_web_session_key = ""
-claude_web_cookie = ""
-EOF
-  echo "Created terraform.tfvars with default configuration"
+if [[ ! -f "terraform.tfvars.local" ]]; then
+  cp terraform.tfvars.example terraform.tfvars.local
+  echo "Created terraform.tfvars.local with default configuration"
   echo "Edit it to customize your deployment"
   echo ""
-  read -p "Press Enter to continue or Ctrl+C to edit terraform.tfvars first..."
+  read -p "Press Enter to continue or Ctrl+C to edit terraform.tfvars.local first..."
 fi
 
 echo "Initializing Terraform..."
@@ -67,19 +49,22 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
   terraform output
   
   echo ""
-  echo "Next steps:"
-  echo "  1. Check pod status: kubectl get pods -n \$(terraform output namespace)"
-  echo "  2. Check service: kubectl get svc -n \$(terraform output namespace)"
-  echo "  3. Run onboarding:"
-  echo "     terraform apply -var='create_onboarding_job=true'"
-  echo "     kubectl attach -n \$(terraform output namespace) openclaw-onboarding -i"
+echo "Next steps:"
+  echo "  1. Check pod status: kubectl get pods -n \\$(terraform output namespace)"
+  echo "  2. Check service: kubectl get svc -n \\$(terraform output namespace)"
+  echo "  3. Run onboarding (for initial setup, use sequential applies):"
+  echo "     terraform apply -var='create_onboarding_job=true' -var='create_gateway_deployment=false'"
+  echo "     kubectl attach -n \\$(terraform output namespace) openclaw-onboarding -i -c onboard"
+  echo "     terraform apply -var='create_onboarding_job=false' -var='create_gateway_deployment=true'"
   echo ""
   echo "  Onboarding prompts:"
   echo "    - Gateway bind: lan"
   echo "    - Gateway auth: token"
-  echo "    - Gateway token: \$(terraform output onboarding_token)"
+  echo "    - Gateway token: \\$(terraform output gateway_token)"
   echo "    - Tailscale exposure: Off"
   echo "    - Install Gateway daemon: No"
+  echo ""
+  echo "  Alternative: Use setup.sh for automated sequential setup"
 else
   echo "Deployment cancelled"
 fi

@@ -1,0 +1,34 @@
+# OpenClaw Configuration
+namespace = "openclaw"
+container_image = "ghcr.io/openclaw/openclaw:latest"
+busybox_image = "busybox:latest"
+
+# Gateway Settings
+gateway_replicas = 1
+gateway_bind = "lan"
+service_type = "LoadBalancer"
+
+# Storage (PVC for production)
+use_hostpath = false
+config_storage_size = "1Gi"
+workspace_storage_size = "5Gi"
+
+# For development with hostPath instead of PVCs, uncomment:
+# use_hostpath = true
+# fix_hostpath_permissions = true
+# config_hostpath = "/var/lib/openclaw/config"
+# workspace_hostpath = "/var/lib/openclaw/workspace"
+
+# Node Scheduling (label your nodes with: kubectl label nodes <node-name> openclaw-enabled=true)
+node_selector = {
+  "openclaw-enabled" = "true"
+}
+
+# Optional: Claude AI Integration
+claude_ai_session_key = ""
+claude_web_session_key = ""
+claude_web_cookie = ""
+
+# Onboarding (set to true for initial setup, sequence: onboarding → gateway)
+create_onboarding_job = false
+create_gateway_deployment = true

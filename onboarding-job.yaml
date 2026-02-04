@@ -1,19 +1,12 @@
-apiVersion: apps/v1
-kind: Deployment
+apiVersion: batch/v1
+kind: Job
 metadata:
-  name: openclaw-gateway
+  name: openclaw-onboarding
   namespace: openclaw
-  labels:
-    app: openclaw-gateway
 spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: openclaw-gateway
   template:
     metadata:
-      labels:
-        app: openclaw-gateway
+      name: openclaw-onboarding
     spec:
       nodeSelector:
         openclaw-enabled: "true"
@@ -27,7 +20,7 @@ spec:
         - name: openclaw-workspace
           mountPath: /home/node/.openclaw/workspace
       containers:
-      - name: gateway
+      - name: onboard
         image: ghcr.io/openclaw/openclaw:latest
         env:
         - name: HOME
@@ -39,35 +32,14 @@ spec:
             secretKeyRef:
               name: openclaw-config
               key: OPENCLAW_GATEWAY_TOKEN
-        - name: CLAUDE_AI_SESSION_KEY
-          valueFrom:
-            secretKeyRef:
-              name: openclaw-claude
-              key: CLAUDE_AI_SESSION_KEY
-              optional: true
-        - name: CLAUDE_WEB_SESSION_KEY
-          valueFrom:
-            secretKeyRef:
-              name: openclaw-claude
-              key: CLAUDE_WEB_SESSION_KEY
-              optional: true
-        - name: CLAUDE_WEB_COOKIE
-          valueFrom:
-            secretKeyRef:
-              name: openclaw-claude
-              key: CLAUDE_WEB_COOKIE
-              optional: true
-        ports:
-        - containerPort: 18789
-          name: gateway
-        - containerPort: 18790
-          name: bridge
+        stdin: true
+        tty: true
         volumeMounts:
         - name: openclaw-config
           mountPath: /home/node/.openclaw
         - name: openclaw-workspace
           mountPath: /home/node/.openclaw/workspace
-        command: ["node", "dist/index.js", "gateway", "--bind", "lan", "--port", "18789"]
+        command: ["node", "dist/index.js", "onboard", "--no-install-daemon"]
       volumes:
       - name: openclaw-config
         persistentVolumeClaim:
@@ -75,3 +47,5 @@ spec:
       - name: openclaw-workspace
         persistentVolumeClaim:
           claimName: openclaw-workspace-pvc
+      restartPolicy: Never
+  backoffLimit: 0

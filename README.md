@@ -18,23 +18,61 @@ TOKEN=$(openssl rand -hex 32)
 # Update token in secrets.yaml
 sed -i "s/replace-with-generated-token/$TOKEN/" secrets.yaml
 
-# Apply all YAML
+# Apply resources in correct order (onboarding before gateway!)
 kubectl apply -f namespace.yaml
 kubectl apply -f secrets.yaml
 kubectl apply -f config-pvc.yaml
 kubectl apply -f workspace-pvc.yaml
-kubectl apply -f gateway-deployment.yaml
+kubectl apply -f onboarding-job.yaml        # Run onboarding FIRST to initialize config
+kubectl attach -n openclaw openclaw-onboarding -i -c onboard  # Attach and complete onboarding
+kubectl delete job -n openclaw openclaw-onboarding --ignore-not-found=true  # Clean up
+kubectl apply -f gateway-deployment.yaml     # THEN deploy gateway
 kubectl apply -f gateway-service.yaml
-kubectl apply -f onboarding-job.yaml
 
 # Label your nodes
 kubectl label nodes <node-name> openclaw-enabled=true
 ```
 
+**Important**: The onboarding job must run before the gateway deployment to ensure config is initialized.
+
 ### Option 3: Bundled YAML
 ```bash
 ./generate-manifest.sh
 kubectl apply -f openclaw-k8s.yaml
+```
+
+### Option 4: Interactive Setup Script (Easiest)
+```bash
+# Production (with PVCs)
+./setup.sh
+
+# Development (with hostPath - simpler, no PVCs required)
+export OPENCLAW_USE_HOSTPATH=true
+export OPENCLAW_CONFIG_HOSTPATH=/var/lib/openclaw/config
+export OPENCLAW_WORKSPACE_HOSTPATH=/var/lib/openclaw/workspace
+./setup.sh
+```
+
+The `setup.sh` script automates the entire deployment:
+- Generates a gateway token (or uses `OPENCLAW_GATEWAY_TOKEN`)
+- Creates namespace and secrets
+- Creates PVCs (or uses hostPath if enabled) for config and workspace
+- Deploys gateway as a Deployment
+- Creates LoadBalancer service
+- Runs interactive onboarding
+- Provides provider setup commands
+
+Environment variables (optional):
+```bash
+export OPENCLAW_NAMESPACE="openclaw"
+export OPENCLAW_IMAGE="ghcr.io/openclaw/openclaw:latest"
+export OPENCLAW_BUSYBOX_IMAGE="busybox:latest"
+export OPENCLAW_GATEWAY_TOKEN="your-token"  # auto-generated if not set
+export OPENCLAW_USE_HOSTPATH="false"       # Use hostPath instead of PVC
+export OPENCLAW_CONFIG_HOSTPATH="/var/lib/openclaw/config"
+export OPENCLAW_WORKSPACE_HOSTPATH="/var/lib/openclaw/workspace"
+export CLAUDE_AI_SESSION_KEY="optional-ai-key"
+export OPENCLAW_NODE_SELECTOR='{"openclaw-enabled":"true"}'
 ```
 
 ## Terraform Usage
@@ -105,12 +143,17 @@ kubectl apply -f gateway-service.yaml
 |----------|---------|-------------|
 | `namespace` | `openclaw` | Kubernetes namespace |
 | `container_image` | `ghcr.io/openclaw/openclaw:latest` | Container image |
+| `busybox_image` | `busybox:latest` | Busybox image for init containers |
 | `gateway_token` | auto-generated | Gateway auth token |
 | `gateway_replicas` | `1` | Number of gateway replicas |
 | `gateway_bind` | `lan` | Gateway bind mode |
 | `gateway_port` | `18789` | Gateway service port |
 | `bridge_port` | `18790` | Bridge service port |
 | `service_type` | `LoadBalancer` | Kubernetes service type |
+| `use_hostpath` | `false` | Use hostPath instead of PVC (development) |
+| `fix_hostpath_permissions` | `true` | Auto-fix hostPath permissions (chown 1000:1000, chmod 700) |
+| `config_hostpath` | `/var/lib/openclaw/config` | Host path for config (if hostPath) |
+| `workspace_hostpath` | `/var/lib/openclaw/workspace` | Host path for workspace (if hostPath) |
 | `config_storage_size` | `1Gi` | Config PVC storage |
 | `workspace_storage_size` | `5Gi` | Workspace PVC storage |
 
