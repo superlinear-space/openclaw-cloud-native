@@ -2,6 +2,10 @@ resource "random_id" "gateway_token" {
   byte_length = 32
 }
 
+resource "random_id" "browserless_token" {
+  byte_length = 32
+}
+
 # Use dedicated kubernetes_secret for Secret (better provider support)
 resource "kubernetes_secret" "openclaw_config" {
   metadata {
@@ -18,8 +22,25 @@ resource "kubernetes_secret" "openclaw_config" {
   }
 }
 
+# Browserless Secret - use dedicated resource for browserless token
+resource "kubernetes_secret" "openclaw_browserless" {
+  metadata {
+    name      = "openclaw-browserless"
+    namespace = var.namespace
+    labels = {
+      app = "openclaw"
+    }
+  }
+
+  type = "Opaque"
+  data = {
+    BROWSERLESS_TOKEN = local.browserless_token
+  }
+}
+
 # Claude Secret - use dedicated resource if Claude keys are provided
 resource "kubernetes_secret" "openclaw_claude" {
+
   count = (var.claude_ai_session_key != "" || var.claude_web_session_key != "" || var.claude_web_cookie != "") ? 1 : 0
 
   metadata {

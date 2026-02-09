@@ -155,3 +155,9 @@ variable "browserless_port" {
   type        = number
   default     = 3000
 }
+
+variable "browserless_token" {
+  description = "Browserless authentication token (auto-generated if empty)"
+  type        = string
+  default     = ""
+}

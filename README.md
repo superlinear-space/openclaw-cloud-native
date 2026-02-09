@@ -98,7 +98,8 @@ kubectl attach -n openclaw openclaw-onboarding -i
 ### Outputs
 ```bash
 terraform output namespace
-terraform output gateway_token  # Sensitive
+terraform output gateway_token      # Sensitive
+terraform output browserless_token  # Sensitive
 terraform output gateway_service
 ```
 
@@ -145,6 +146,7 @@ kubectl apply -f gateway-service.yaml
 | `container_image` | `ghcr.io/openclaw/openclaw:latest` | Container image |
 | `busybox_image` | `busybox:latest` | Busybox image for init containers |
 | `gateway_token` | auto-generated | Gateway auth token |
+| `browserless_token` | auto-generated | Browserless auth token |
 | `gateway_replicas` | `1` | Number of gateway replicas |
 | `gateway_bind` | `lan` | Gateway bind mode |
 | `gateway_port` | `18789` | Gateway service port |
@@ -156,6 +158,11 @@ kubectl apply -f gateway-service.yaml
 | `workspace_hostpath` | `/var/lib/openclaw/workspace` | Host path for workspace (if hostPath) |
 | `config_storage_size` | `1Gi` | Config PVC storage |
 | `workspace_storage_size` | `5Gi` | Workspace PVC storage |
+| `browserless_image` | `ghcr.io/browserless/chromium:latest` | Browserless container image |
+| `browserless_replicas` | `1` | Number of browserless replicas |
+| `browserless_port` | `3000` | Browserless service port |
+| `browserless_token` | auto-generated | Browserless auth token |
+| `create_browserless` | `false` | Create browserless deployment |
 
 ### Node Scheduling
 
@@ -176,6 +183,8 @@ kubectl label nodes <node-name> openclaw-enabled=true
 |------|-------------|
 | `namespace.yaml` | Creates the `openclaw` namespace |
 | `secrets.yaml` | Holds gateway token and optional Claude keys |
+| `browserless-deployment.yaml` | Browserless deployment (optional) |
+| `browserless-service.yaml` | Browserless service (optional) |
 | `config-pvc.yaml` | Persistent volume for config (1Gi) |
 | `workspace-pvc.yaml` | Persistent volume for workspace (5Gi) |
 | `gateway-deployment.yaml` | Gateway deployment with 1 replica |

@@ -23,6 +23,11 @@ spec:
         env:
         - name: HOME
           value: /home/node
+        - name: TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: openclaw-browserless
+              key: BROWSERLESS_TOKEN
         ports:
         - containerPort: 3000
           name: browserless

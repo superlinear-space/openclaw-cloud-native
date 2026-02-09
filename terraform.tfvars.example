@@ -38,3 +38,4 @@ create_gateway_deployment = true
 # browserless_image = "ghcr.io/browserless/chromium:latest"
 # browserless_replicas = 1
 # browserless_port = 3000
+# browserless_token = ""  # Auto-generated if empty

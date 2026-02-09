@@ -57,6 +57,12 @@ output "node_selector" {
   value       = var.node_selector
 }
 
+output "browserless_token" {
+  description = "Browserless authentication token"
+  value       = var.create_browserless ? local.browserless_token : null
+  sensitive   = true
+}
+
 output "storage_config_info" {
   description = "Storage configuration information"
   value = {
