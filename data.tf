@@ -12,6 +12,9 @@ locals {
 
   # Dynamic gateway token
   gateway_token = var.gateway_token != "" ? var.gateway_token : random_id.gateway_token.hex
+
+  # Dynamic browserless token
+  browserless_token = var.browserless_token != "" ? var.browserless_token : random_id.browserless_token.hex
 }
 
 # Generate secrets manifest with data (base64-encoded) instead of stringData
