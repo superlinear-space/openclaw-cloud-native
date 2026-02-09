@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: openclaw-browserless
+  namespace: openclaw
+spec:
+  selector:
+    app: openclaw-browserless
+  ports:
+  - port: 3000
+    targetPort: 3000
+    name: browserless
+  type: ClusterIP

@@ -32,3 +32,9 @@ claude_web_cookie = ""
 # Onboarding (set to true for initial setup, sequence: onboarding → gateway)
 create_onboarding_job = false
 create_gateway_deployment = true
+
+# Optional: Browserless Chrome (for browser automation)
+# create_browserless = false
+# browserless_image = "ghcr.io/browserless/chromium:latest"
+# browserless_replicas = 1
+# browserless_port = 3000

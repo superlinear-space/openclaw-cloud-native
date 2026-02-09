@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: openclaw-browserless
+  namespace: openclaw
+  labels:
+    app: openclaw-browserless
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: openclaw-browserless
+  template:
+    metadata:
+      labels:
+        app: openclaw-browserless
+    spec:
+      nodeSelector:
+        openclaw-enabled: "true"
+      containers:
+      - name: browserless
+        image: ghcr.io/browserless/chromium:latest
+        env:
+        - name: HOME
+          value: /home/node
+        ports:
+        - containerPort: 3000
+          name: browserless

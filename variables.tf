@@ -131,3 +131,27 @@ variable "create_gateway_deployment" {
   type        = bool
   default     = true
 }
+
+variable "create_browserless" {
+  description = "Whether to create the browserless deployment and service"
+  type        = bool
+  default     = false
+}
+
+variable "browserless_image" {
+  description = "Container image for browserless"
+  type        = string
+  default     = "ghcr.io/browserless/chromium:latest"
+}
+
+variable "browserless_replicas" {
+  description = "Number of browserless replicas"
+  type        = number
+  default     = 1
+}
+
+variable "browserless_port" {
+  description = "Browserless service port"
+  type        = number
+  default     = 3000
+}

@@ -74,3 +74,13 @@ resource "kubernetes_manifest" "gateway_service" {
   count    = var.create_gateway_deployment ? 1 : 0
   manifest = yamldecode(local.gateway_service_patched)
 }
+
+resource "kubernetes_manifest" "browserless_deployment" {
+  count    = var.create_browserless ? 1 : 0
+  manifest = yamldecode(local.browserless_deployment_final)
+}
+
+resource "kubernetes_manifest" "browserless_service" {
+  count    = var.create_browserless ? 1 : 0
+  manifest = yamldecode(local.browserless_service_patched)
+}

@@ -1,12 +1,14 @@
 # Read all Kubernetes YAML files as the source of truth
 locals {
-  namespace_yaml          = file("${path.module}/namespace.yaml")
-  secrets_yaml            = file("${path.module}/secrets.yaml")
-  config_pvc_yaml         = file("${path.module}/config-pvc.yaml")
-  workspace_pvc_yaml      = file("${path.module}/workspace-pvc.yaml")
-  gateway_deployment_yaml = file("${path.module}/gateway-deployment.yaml")
-  gateway_service_yaml    = file("${path.module}/gateway-service.yaml")
-  onboarding_job_yaml     = file("${path.module}/onboarding-job.yaml")
+  namespace_yaml             = file("${path.module}/namespace.yaml")
+  secrets_yaml               = file("${path.module}/secrets.yaml")
+  config_pvc_yaml            = file("${path.module}/config-pvc.yaml")
+  workspace_pvc_yaml         = file("${path.module}/workspace-pvc.yaml")
+  gateway_deployment_yaml    = file("${path.module}/gateway-deployment.yaml")
+  gateway_service_yaml       = file("${path.module}/gateway-service.yaml")
+  onboarding_job_yaml        = file("${path.module}/onboarding-job.yaml")
+  browserless_deployment_yaml = file("${path.module}/browserless-deployment.yaml")
+  browserless_service_yaml   = file("${path.module}/browserless-service.yaml")
 
   # Dynamic gateway token
   gateway_token = var.gateway_token != "" ? var.gateway_token : random_id.gateway_token.hex
@@ -281,4 +283,59 @@ locals {
       CLAUDE_WEB_COOKIE      = var.claude_web_cookie != "" ? base64encode(var.claude_web_cookie) : ""
     }
   }) : null
+}
+
+# Patch browserless deployment with all variables (namespace LAST)
+locals {
+  browserless_deployment_patched = replace(
+    replace(
+      replace(
+        replace(
+          local.browserless_deployment_yaml,
+          "image: ghcr.io/browserless/chromium:latest",
+          "image: ${var.browserless_image}"
+        ),
+        "        - containerPort: 3000",
+        "        - containerPort: ${var.browserless_port}"
+      ),
+      "replicas: 1",
+      "replicas: ${var.browserless_replicas}"
+    ),
+    "        openclaw-enabled: \"true\"",
+    local.node_selector_yaml_str
+  )
+}
+
+# Apply namespace LAST to avoid breaking other replacements
+locals {
+  browserless_deployment_final = replace(
+    local.browserless_deployment_patched,
+    "namespace: openclaw",
+    "namespace: ${var.namespace}"
+  )
+}
+
+# Generate browserless service manifest
+locals {
+  browserless_service_patched = yamlencode({
+    apiVersion = "v1"
+    kind       = "Service"
+    metadata = {
+      name      = "openclaw-browserless"
+      namespace = var.namespace
+    }
+    spec = {
+      type = "ClusterIP"
+      selector = {
+        app = "openclaw-browserless"
+      }
+      ports = [
+        {
+          port       = var.browserless_port
+          targetPort = var.browserless_port
+          name       = "browserless"
+        }
+      ]
+    }
+  })
 }

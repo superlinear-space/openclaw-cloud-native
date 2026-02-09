@@ -102,6 +102,22 @@ claude_web_session_key  = "your-web-session-key"
 claude_web_cookie       = "your-cookie"
 ```
 
+### Browserless Chrome (Optional)
+
+For browser automation capabilities, deploy the browserless Chrome service:
+
+```hcl
+create_browserless = true
+browserless_image  = "ghcr.io/browserless/chromium:latest"
+browserless_replicas = 1
+browserless_port   = 3000
+```
+
+The browserless service will be available within the cluster at:
+- Service name: `openclaw-browserless`
+- Port: `3000`
+- URL: `http://openclaw-browserless.openclaw:3000`
+
 ## Run Onboarding
 
 ### Option 1: Sequential Apply (Simplest for Initial Setup)
