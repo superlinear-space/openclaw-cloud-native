@@ -309,10 +309,19 @@ locals {
   )
 }
 
+# Apply shm size replacement
+locals {
+  browserless_deployment_with_shm = replace(
+    local.browserless_deployment_patched,
+    "sizeLimit: 1Gi",
+    "sizeLimit: ${var.browserless_shm_size}"
+  )
+}
+
 # Apply namespace LAST to avoid breaking other replacements
 locals {
   browserless_deployment_final = replace(
-    local.browserless_deployment_patched,
+    local.browserless_deployment_with_shm,
     "namespace: openclaw",
     "namespace: ${var.namespace}"
   )

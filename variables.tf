@@ -161,3 +161,9 @@ variable "browserless_token" {
   type        = string
   default     = ""
 }
+
+variable "browserless_shm_size" {
+  description = "Size of shared memory (shm) for browserless (/dev/shm)"
+  type        = string
+  default     = "1Gi"
+}

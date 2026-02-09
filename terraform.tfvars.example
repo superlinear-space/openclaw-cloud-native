@@ -39,3 +39,4 @@ create_gateway_deployment = true
 # browserless_replicas = 1
 # browserless_port = 3000
 # browserless_token = ""  # Auto-generated if empty
+# browserless_shm_size = "1Gi"  # Shared memory size for /dev/shm
