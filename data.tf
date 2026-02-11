@@ -106,10 +106,6 @@ locals {
 
 # Generate init container YAML for fixing hostPath permissions
 locals {
-  fix_permissions_volume_mounts = length(var.gateway_additional_hostpath_mounts) > 0 ? join("\n", [
-    for m in var.gateway_additional_hostpath_mounts : "        - name: ${m.name}\n          mountPath: ${m.mount_path}${m.read_only ? "\n          readOnly: true" : ""}"
-  ]) : ""
-
   fix_permissions_base = <<EOF
       - name: fix-permissions
         image: ${var.busybox_image}
@@ -121,9 +117,7 @@ locals {
           mountPath: /home/node/.openclaw/workspace
 EOF
 
-  fix_permissions_yaml_content = length(var.gateway_additional_hostpath_mounts) > 0 ? "${local.fix_permissions_base}${local.fix_permissions_volume_mounts}\n" : local.fix_permissions_base
-
-  fix_permissions_yaml = var.use_hostpath && var.fix_hostpath_permissions ? local.fix_permissions_yaml_content : ""
+  fix_permissions_yaml = var.use_hostpath && var.fix_hostpath_permissions ? local.fix_permissions_base : ""
 }
 
 # Generate node selector YAML string from map
@@ -202,7 +196,7 @@ locals {
       - name: ${m.name}
         hostPath:
           path: ${m.host_path}
-          type: DirectoryOrCreate
+          type: ${m.type}
 EOF
   ]) : ""
 

@@ -139,6 +139,7 @@ variable "gateway_additional_hostpath_mounts" {
     host_path  = string
     mount_path = string
     read_only  = optional(bool, false)
+    type       = optional(string, "DirectoryOrCreate")
   }))
   default = []
 }
