@@ -436,15 +436,19 @@ locals {
   searxng_deployment_patched = replace(
     replace(
       replace(
-        local.searxng_deployment_yaml,
-        "image: docker.io/searxng/searxng:latest",
-        "image: ${var.searxng_image}"
+        replace(
+          local.searxng_deployment_yaml,
+          "image: docker.io/searxng/searxng:latest",
+          "image: ${var.searxng_image}"
+        ),
+        "        - containerPort: 8080",
+        "        - containerPort: ${var.searxng_port}"
       ),
-      "        - containerPort: 8080",
-      "        - containerPort: ${var.searxng_port}"
+      "replicas: 1",
+      "replicas: ${var.searxng_replicas}"
     ),
-    "replicas: 1",
-    "replicas: ${var.searxng_replicas}"
+    "        openclaw-enabled: \"true\"",
+    local.node_selector_yaml_str
   )
 }
 
