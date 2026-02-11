@@ -201,16 +201,32 @@ EOF
   ]) : ""
 
   additional_volume_mount_yaml = length(var.gateway_additional_hostpath_mounts) > 0 ? join("\n", [
-    for m in var.gateway_additional_hostpath_mounts : "        - name: ${m.name}\n          mountPath: ${m.mount_path}${m.read_only ? "\n          readOnly: true" : ""}"
+    for m in var.gateway_additional_hostpath_mounts : join("\n", compact([
+      "        - name: ${m.name}",
+      "          mountPath: ${m.mount_path}",
+      m.read_only ? "          readOnly: true" : ""
+    ]))
   ]) : ""
 }
 
 # Inject additional hostPath mounts into gateway deployment
 locals {
-  gateway_deployment_with_additional_mounts = length(var.gateway_additional_hostpath_mounts) > 0 ? replace(
-    replace(
+  # First inject additional volumes (works for both PVC and hostPath modes)
+  gateway_deployment_with_additional_volumes = length(var.gateway_additional_hostpath_mounts) > 0 ? (
+    var.use_hostpath ? replace(
       local.gateway_deployment_with_fix_permissions,
-      # Add additional volumes
+      # hostPath mode: workspace volume uses hostPath
+      "      - name: openclaw-workspace\n        hostPath:\n          path: ${var.workspace_hostpath}\n          type: DirectoryOrCreate",
+      <<EOF
+      - name: openclaw-workspace
+        hostPath:
+          path: ${var.workspace_hostpath}
+          type: DirectoryOrCreate
+${local.additional_volume_yaml}
+EOF
+    ) : replace(
+      local.gateway_deployment_with_fix_permissions,
+      # PVC mode: workspace volume uses persistentVolumeClaim
       "      - name: openclaw-workspace\n        persistentVolumeClaim:\n          claimName: ${var.namespace}-workspace-pvc",
       <<EOF
       - name: openclaw-workspace
@@ -218,15 +234,21 @@ locals {
           claimName: ${var.namespace}-workspace-pvc
 ${local.additional_volume_yaml}
 EOF
-    ),
-    # Add additional volume mounts for gateway container (after workspace mount)
-    "        - name: openclaw-workspace\n          mountPath: /home/node/.openclaw/workspace",
+    )
+  ) : local.gateway_deployment_with_fix_permissions
+
+  # Then inject additional volume mounts
+  gateway_deployment_with_additional_mounts = length(var.gateway_additional_hostpath_mounts) > 0 ? replace(
+    local.gateway_deployment_with_additional_volumes,
+    # Add additional volume mounts for gateway container only (using unique context from main container)
+    "        - name: openclaw-workspace\n          mountPath: /home/node/.openclaw/workspace\n        command: [\"node\", \"dist/index.js\", \"gateway\",",
     <<EOF
         - name: openclaw-workspace
           mountPath: /home/node/.openclaw/workspace
 ${local.additional_volume_mount_yaml}
+        command: ["node", "dist/index.js", "gateway",
 EOF
-  ) : local.gateway_deployment_with_fix_permissions
+  ) : local.gateway_deployment_with_additional_volumes
 }
 
 # Apply namespace LAST to avoid breaking PVC claim replacements

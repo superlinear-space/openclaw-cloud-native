@@ -112,9 +112,15 @@ gateway_additional_hostpath_mounts = [
     host_path  = "/opt/tools"
     mount_path = "/tools"
     read_only  = true
+    type       = "DirectoryOrCreate"  # Optional, default: "DirectoryOrCreate"
   }
 ]
 ```
+
+**Important Notes:**
+- Additional mounts work with both `use_hostpath = true` and `use_hostpath = false` (PVC) storage modes
+- Additional mounts are only mounted on the **main gateway container**, not on init containers
+- The `type` field accepts any valid Kubernetes hostPath type (e.g., `Directory`, `DirectoryOrCreate`, `File`, `FileOrCreate`)
 
 ### Claude AI Integration (Optional)
 

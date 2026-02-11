@@ -37,6 +37,7 @@ node_selector = {
 #     host_path  = "/host/path"
 #     mount_path = "/container/path"
 #     read_only  = true
+#     type       = "DirectoryOrCreate"  # Options: Directory, DirectoryOrCreate, File, FileOrCreate, Socket, CharDevice, BlockDevice
 #   }
 # ]
 
