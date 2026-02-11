@@ -1,17 +1,17 @@
 # Read all Kubernetes YAML files as the source of truth
 locals {
-  namespace_yaml             = file("${path.module}/namespace.yaml")
-  secrets_yaml               = file("${path.module}/secrets.yaml")
-  config_pvc_yaml            = file("${path.module}/config-pvc.yaml")
-  workspace_pvc_yaml         = file("${path.module}/workspace-pvc.yaml")
-  gateway_deployment_yaml    = file("${path.module}/gateway-deployment.yaml")
-  gateway_service_yaml       = file("${path.module}/gateway-service.yaml")
-  onboarding_job_yaml        = file("${path.module}/onboarding-job.yaml")
+  namespace_yaml              = file("${path.module}/namespace.yaml")
+  secrets_yaml                = file("${path.module}/secrets.yaml")
+  config_pvc_yaml             = file("${path.module}/config-pvc.yaml")
+  workspace_pvc_yaml          = file("${path.module}/workspace-pvc.yaml")
+  gateway_deployment_yaml     = file("${path.module}/gateway-deployment.yaml")
+  gateway_service_yaml        = file("${path.module}/gateway-service.yaml")
+  onboarding_job_yaml         = file("${path.module}/onboarding-job.yaml")
   browserless_deployment_yaml = file("${path.module}/browserless-deployment.yaml")
-  browserless_service_yaml   = file("${path.module}/browserless-service.yaml")
-  searxng_deployment_yaml    = file("${path.module}/searxng-deployment.yaml")
-  searxng_service_yaml       = file("${path.module}/searxng-service.yaml")
-  searxng_pvc_yaml           = file("${path.module}/searxng-pvc.yaml")
+  browserless_service_yaml    = file("${path.module}/browserless-service.yaml")
+  searxng_deployment_yaml     = file("${path.module}/searxng-deployment.yaml")
+  searxng_service_yaml        = file("${path.module}/searxng-service.yaml")
+  searxng_pvc_yaml            = file("${path.module}/searxng-pvc.yaml")
 
   # Dynamic gateway token
   gateway_token = var.gateway_token != "" ? var.gateway_token : random_id.gateway_token.hex
@@ -106,7 +106,11 @@ locals {
 
 # Generate init container YAML for fixing hostPath permissions
 locals {
-  fix_permissions_yaml_content = <<EOF
+  fix_permissions_volume_mounts = length(var.gateway_additional_hostpath_mounts) > 0 ? join("\n", [
+    for m in var.gateway_additional_hostpath_mounts : "        - name: ${m.name}\n          mountPath: ${m.mount_path}${m.read_only ? "\n          readOnly: true" : ""}"
+  ]) : ""
+
+  fix_permissions_base = <<EOF
       - name: fix-permissions
         image: ${var.busybox_image}
         command: ["sh", "-c", "chown -R 1000:1000 /home/node/.openclaw && chmod -R 700 /home/node/.openclaw"]
@@ -116,6 +120,8 @@ locals {
         - name: openclaw-workspace
           mountPath: /home/node/.openclaw/workspace
 EOF
+
+  fix_permissions_yaml_content = length(var.gateway_additional_hostpath_mounts) > 0 ? "${local.fix_permissions_base}${local.fix_permissions_volume_mounts}\n" : local.fix_permissions_base
 
   fix_permissions_yaml = var.use_hostpath && var.fix_hostpath_permissions ? local.fix_permissions_yaml_content : ""
 }
@@ -189,10 +195,68 @@ locals {
   ) : local.gateway_deployment_with_storage
 }
 
+# Generate additional hostPath volume YAML
+locals {
+  additional_volume_yaml = length(var.gateway_additional_hostpath_mounts) > 0 ? join("\n", [
+    for m in var.gateway_additional_hostpath_mounts : <<EOF
+      - name: ${m.name}
+        hostPath:
+          path: ${m.host_path}
+          type: DirectoryOrCreate
+EOF
+  ]) : ""
+
+  additional_volume_mount_yaml = length(var.gateway_additional_hostpath_mounts) > 0 ? join("\n", [
+    for m in var.gateway_additional_hostpath_mounts : "        - name: ${m.name}\n          mountPath: ${m.mount_path}${m.read_only ? "\n          readOnly: true" : ""}"
+  ]) : ""
+}
+
+# Inject additional hostPath mounts into gateway deployment
+locals {
+  gateway_deployment_with_additional_mounts = length(var.gateway_additional_hostpath_mounts) > 0 ? replace(
+    replace(
+      local.gateway_deployment_with_fix_permissions,
+      # Add additional volumes
+      "      - name: openclaw-workspace\n        persistentVolumeClaim:\n          claimName: ${var.namespace}-workspace-pvc",
+      <<EOF
+      - name: openclaw-workspace
+        persistentVolumeClaim:
+          claimName: ${var.namespace}-workspace-pvc
+${local.additional_volume_yaml}
+EOF
+    ),
+    # Add additional volume mounts for gateway container (after workspace mount)
+    "        - name: openclaw-workspace\n          mountPath: /home/node/.openclaw/workspace",
+    <<EOF
+        - name: openclaw-workspace
+          mountPath: /home/node/.openclaw/workspace
+${local.additional_volume_mount_yaml}
+EOF
+  ) : local.gateway_deployment_with_fix_permissions
+
+  # Also add volume mounts to init containers
+  gateway_deployment_with_additional_init_mounts = length(var.gateway_additional_hostpath_mounts) > 0 ? replace(
+    local.gateway_deployment_with_additional_mounts,
+    # Add additional volume mounts for setup-directories init container
+    "      - name: setup-directories\n        image: ${var.busybox_image}\n        command: [\"sh\", \"-c\", \"mkdir -p /home/node/.openclaw /home/node/.openclaw/workspace\"]\n        volumeMounts:\n        - name: openclaw-config\n          mountPath: /home/node/.openclaw\n        - name: openclaw-workspace\n          mountPath: /home/node/.openclaw/workspace",
+    <<EOF
+      - name: setup-directories
+        image: ${var.busybox_image}
+        command: ["sh", "-c", "mkdir -p /home/node/.openclaw /home/node/.openclaw/workspace"]
+        volumeMounts:
+        - name: openclaw-config
+          mountPath: /home/node/.openclaw
+        - name: openclaw-workspace
+          mountPath: /home/node/.openclaw/workspace
+${local.additional_volume_mount_yaml}
+EOF
+  ) : local.gateway_deployment_with_additional_mounts
+}
+
 # Apply namespace LAST to avoid breaking PVC claim replacements
 locals {
   gateway_deployment_final = replace(
-    local.gateway_deployment_with_fix_permissions,
+    local.gateway_deployment_with_additional_init_mounts,
     "namespace: openclaw",
     "namespace: ${var.namespace}"
   )
@@ -363,7 +427,7 @@ locals {
   searxng_storage_config = var.use_hostpath ? {
     config_volume = "        hostPath:\n          path: ${var.searxng_config_hostpath}\n          type: DirectoryOrCreate"
     data_volume   = "        hostPath:\n          path: ${var.searxng_data_hostpath}\n          type: DirectoryOrCreate"
-  } : {
+    } : {
     config_volume = "        persistentVolumeClaim:\n          claimName: ${var.namespace}-searxng-config-pvc"
     data_volume   = "        persistentVolumeClaim:\n          claimName: ${var.namespace}-searxng-data-pvc"
   }

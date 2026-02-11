@@ -132,6 +132,17 @@ variable "create_gateway_deployment" {
   default     = true
 }
 
+variable "gateway_additional_hostpath_mounts" {
+  description = "Additional hostPath mounts for gateway deployment"
+  type = list(object({
+    name       = string
+    host_path  = string
+    mount_path = string
+    read_only  = optional(bool, false)
+  }))
+  default = []
+}
+
 variable "create_browserless" {
   description = "Whether to create the browserless deployment and service"
   type        = bool
