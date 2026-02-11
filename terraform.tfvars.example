@@ -40,3 +40,15 @@ create_gateway_deployment = true
 # browserless_port = 3000
 # browserless_token = ""  # Auto-generated if empty
 # browserless_shm_size = "1Gi"  # Shared memory size for /dev/shm
+
+# Optional: SearXNG Local Search Engine
+# create_searxng = false
+# searxng_image = "docker.io/searxng/searxng:latest"
+# searxng_replicas = 1
+# searxng_port = 8080
+# searxng_secret = ""  # Auto-generated if empty
+# searxng_config_storage_size = "100Mi"
+# searxng_data_storage_size = "500Mi"
+# When use_hostpath = true, SearXNG will use these paths:
+# searxng_config_hostpath = "/var/lib/openclaw/searxng/config"
+# searxng_data_hostpath = "/var/lib/openclaw/searxng/data"

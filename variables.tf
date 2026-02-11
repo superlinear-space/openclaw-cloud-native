@@ -167,3 +167,58 @@ variable "browserless_shm_size" {
   type        = string
   default     = "1Gi"
 }
+
+# SearXNG Variables
+variable "create_searxng" {
+  description = "Whether to create the SearXNG deployment and service"
+  type        = bool
+  default     = false
+}
+
+variable "searxng_image" {
+  description = "Container image for SearXNG"
+  type        = string
+  default     = "docker.io/searxng/searxng:latest"
+}
+
+variable "searxng_replicas" {
+  description = "Number of SearXNG replicas"
+  type        = number
+  default     = 1
+}
+
+variable "searxng_port" {
+  description = "SearXNG service port"
+  type        = number
+  default     = 8080
+}
+
+variable "searxng_secret" {
+  description = "SearXNG secret key (auto-generated if empty)"
+  type        = string
+  default     = ""
+}
+
+variable "searxng_config_storage_size" {
+  description = "Storage size for SearXNG config PVC"
+  type        = string
+  default     = "100Mi"
+}
+
+variable "searxng_data_storage_size" {
+  description = "Storage size for SearXNG data PVC"
+  type        = string
+  default     = "500Mi"
+}
+
+variable "searxng_config_hostpath" {
+  description = "Host path for SearXNG config directory (required if use_hostpath=true)"
+  type        = string
+  default     = "/var/lib/openclaw/searxng/config"
+}
+
+variable "searxng_data_hostpath" {
+  description = "Host path for SearXNG data directory (required if use_hostpath=true)"
+  type        = string
+  default     = "/var/lib/openclaw/searxng/data"
+}

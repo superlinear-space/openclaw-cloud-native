@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: openclaw-searxng
+  namespace: openclaw
+  labels:
+    app: openclaw-searxng
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: openclaw-searxng
+  template:
+    metadata:
+      labels:
+        app: openclaw-searxng
+    spec:
+      nodeSelector:
+        openclaw-enabled: "true"
+      containers:
+      - name: searxng
+        image: docker.io/searxng/searxng:latest
+        env:
+        - name: SEARXNG_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: openclaw-searxng
+              key: SEARXNG_SECRET
+        ports:
+        - containerPort: 8080
+          name: searxng
+        volumeMounts:
+        - name: searxng-config
+          mountPath: /etc/searxng
+        - name: searxng-data
+          mountPath: /var/cache/searxng
+      volumes:
+      - name: searxng-config
+        persistentVolumeClaim:
+          claimName: openclaw-searxng-config-pvc
+      - name: searxng-data
+        persistentVolumeClaim:
+          claimName: openclaw-searxng-data-pvc

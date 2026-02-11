@@ -100,7 +100,9 @@ kubectl attach -n openclaw openclaw-onboarding -i
 terraform output namespace
 terraform output gateway_token      # Sensitive
 terraform output browserless_token  # Sensitive
+terraform output searxng_secret     # Sensitive
 terraform output gateway_service
+terraform output searxng_service
 ```
 
 ### Destroy
@@ -163,6 +165,15 @@ kubectl apply -f gateway-service.yaml
 | `browserless_port` | `3000` | Browserless service port |
 | `browserless_token` | auto-generated | Browserless auth token |
 | `create_browserless` | `false` | Create browserless deployment |
+| `create_searxng` | `false` | Create SearXNG deployment |
+| `searxng_image` | `docker.io/searxng/searxng:latest` | SearXNG container image |
+| `searxng_replicas` | `1` | Number of SearXNG replicas |
+| `searxng_port` | `8080` | SearXNG service port |
+| `searxng_secret` | auto-generated | SearXNG secret key |
+| `searxng_config_storage_size` | `100Mi` | SearXNG config PVC storage |
+| `searxng_data_storage_size` | `500Mi` | SearXNG data PVC storage |
+| `searxng_config_hostpath` | `/var/lib/openclaw/searxng/config` | Host path for SearXNG config (if hostPath) |
+| `searxng_data_hostpath` | `/var/lib/openclaw/searxng/data` | Host path for SearXNG data (if hostPath) |
 
 ### Node Scheduling
 
@@ -185,6 +196,9 @@ kubectl label nodes <node-name> openclaw-enabled=true
 | `secrets.yaml` | Holds gateway token and optional Claude keys |
 | `browserless-deployment.yaml` | Browserless deployment (optional) |
 | `browserless-service.yaml` | Browserless service (optional) |
+| `searxng-deployment.yaml` | SearXNG search engine deployment (optional) |
+| `searxng-service.yaml` | SearXNG service (optional) |
+| `searxng-pvc.yaml` | Persistent volumes for SearXNG config and data |
 | `config-pvc.yaml` | Persistent volume for config (1Gi) |
 | `workspace-pvc.yaml` | Persistent volume for workspace (5Gi) |
 | `gateway-deployment.yaml` | Gateway deployment with 1 replica |
@@ -192,6 +206,65 @@ kubectl label nodes <node-name> openclaw-enabled=true
 | `onboarding-job.yaml` | One-time job for initial onboarding |
 | `cli-job.yaml` | Template for running CLI commands as jobs |
 | `openclaw-k8s.yaml` | Bundled single-file manifest |
+
+## SearXNG Local Search Engine
+
+SearXNG is a privacy-respecting, self-hosted metasearch engine that aggregates results from multiple search engines.
+
+### Enable SearXNG
+
+**With Terraform:**
+```bash
+terraform apply -var="create_searxng=true"
+```
+
+**Or using tfvars:**
+```hcl
+create_searxng = true
+searxng_replicas = 1
+```
+
+### Storage Options
+
+**PVC (default for production):**
+```hcl
+create_searxng = true
+searxng_config_storage_size = "100Mi"
+searxng_data_storage_size = "500Mi"
+```
+
+**HostPath (for development):**
+```hcl
+create_searxng = true
+use_hostpath = true
+searxng_config_hostpath = "/var/lib/openclaw/searxng/config"
+searxng_data_hostpath = "/var/lib/openclaw/searxng/data"
+```
+
+### Accessing SearXNG
+
+Once deployed, SearXNG is available within the cluster at:
+```
+http://openclaw-searxng.<namespace>.svc.cluster.local:8080
+```
+
+Or from other pods in the same namespace:
+```
+http://openclaw-searxng:8080
+```
+
+### SearXNG Configuration
+
+SearXNG configuration is stored in `/etc/searxng/settings.yml` inside the container. You can customize it by:
+
+1. **Exec into the pod:**
+   ```bash
+   kubectl exec -it -n openclaw deployment/openclaw-searxng -- /bin/sh
+   ```
+
+2. **Edit settings.yml** and restart the pod
+
+For more configuration options, see the [SearXNG documentation](https://docs.searxng.org/admin/settings/settings.html).
 
 ## Tools Script
 

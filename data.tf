@@ -9,12 +9,18 @@ locals {
   onboarding_job_yaml        = file("${path.module}/onboarding-job.yaml")
   browserless_deployment_yaml = file("${path.module}/browserless-deployment.yaml")
   browserless_service_yaml   = file("${path.module}/browserless-service.yaml")
+  searxng_deployment_yaml    = file("${path.module}/searxng-deployment.yaml")
+  searxng_service_yaml       = file("${path.module}/searxng-service.yaml")
+  searxng_pvc_yaml           = file("${path.module}/searxng-pvc.yaml")
 
   # Dynamic gateway token
   gateway_token = var.gateway_token != "" ? var.gateway_token : random_id.gateway_token.hex
 
   # Dynamic browserless token
   browserless_token = var.browserless_token != "" ? var.browserless_token : random_id.browserless_token.hex
+
+  # Dynamic searxng secret
+  searxng_secret = var.searxng_secret != "" ? var.searxng_secret : random_id.searxng_secret.hex
 }
 
 # Generate secrets manifest with data (base64-encoded) instead of stringData
@@ -348,6 +354,118 @@ locals {
           name       = "browserless"
         }
       ]
+    }
+  })
+}
+
+# SearXNG storage configuration (supports hostPath or PVC)
+locals {
+  searxng_storage_config = var.use_hostpath ? {
+    config_volume = "        hostPath:\n          path: ${var.searxng_config_hostpath}\n          type: DirectoryOrCreate"
+    data_volume   = "        hostPath:\n          path: ${var.searxng_data_hostpath}\n          type: DirectoryOrCreate"
+  } : {
+    config_volume = "        persistentVolumeClaim:\n          claimName: ${var.namespace}-searxng-config-pvc"
+    data_volume   = "        persistentVolumeClaim:\n          claimName: ${var.namespace}-searxng-data-pvc"
+  }
+}
+
+# Patch searxng deployment with all variables (namespace LAST)
+locals {
+  searxng_deployment_patched = replace(
+    replace(
+      replace(
+        local.searxng_deployment_yaml,
+        "image: docker.io/searxng/searxng:latest",
+        "image: ${var.searxng_image}"
+      ),
+      "        - containerPort: 8080",
+      "        - containerPort: ${var.searxng_port}"
+    ),
+    "replicas: 1",
+    "replicas: ${var.searxng_replicas}"
+  )
+}
+
+# Apply storage backend patch (hostPath or PVC)
+locals {
+  searxng_deployment_with_storage = replace(
+    replace(
+      local.searxng_deployment_patched,
+      "        persistentVolumeClaim:\n          claimName: openclaw-searxng-config-pvc",
+      local.searxng_storage_config.config_volume
+    ),
+    "        persistentVolumeClaim:\n          claimName: openclaw-searxng-data-pvc",
+    local.searxng_storage_config.data_volume
+  )
+}
+
+# Apply namespace LAST to avoid breaking other replacements
+locals {
+  searxng_deployment_final = replace(
+    local.searxng_deployment_with_storage,
+    "namespace: openclaw",
+    "namespace: ${var.namespace}"
+  )
+}
+
+# Generate searxng service manifest
+locals {
+  searxng_service_patched = yamlencode({
+    apiVersion = "v1"
+    kind       = "Service"
+    metadata = {
+      name      = "openclaw-searxng"
+      namespace = var.namespace
+    }
+    spec = {
+      type = "ClusterIP"
+      selector = {
+        app = "openclaw-searxng"
+      }
+      ports = [
+        {
+          port       = var.searxng_port
+          targetPort = var.searxng_port
+          name       = "searxng"
+        }
+      ]
+    }
+  })
+}
+
+# Generate searxng PVC manifests (only used when use_hostpath=false)
+locals {
+  searxng_config_pvc = yamlencode({
+    apiVersion = "v1"
+    kind       = "PersistentVolumeClaim"
+    metadata = {
+      name      = "${var.namespace}-searxng-config-pvc"
+      namespace = var.namespace
+    }
+    spec = {
+      accessModes = ["ReadWriteOnce"]
+      resources = {
+        requests = {
+          storage = var.searxng_config_storage_size
+        }
+      }
+    }
+  })
+
+  searxng_data_pvc = yamlencode({
+    apiVersion = "v1"
+    kind       = "PersistentVolumeClaim"
+    metadata = {
+      name      = "${var.namespace}-searxng-data-pvc"
+      namespace = var.namespace
+    }
+    spec = {
+      accessModes = ["ReadWriteOnce"]
+      resources = {
+        requests = {
+          storage = var.searxng_data_storage_size
+        }
+      }
     }
   })
 }

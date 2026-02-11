@@ -71,3 +71,18 @@ output "storage_config_info" {
     workspace = var.use_hostpath ? var.workspace_hostpath : "${var.workspace_storage_size} PVC"
   }
 }
+
+output "searxng_secret" {
+  description = "SearXNG secret key"
+  value       = var.create_searxng ? local.searxng_secret : null
+  sensitive   = true
+}
+
+output "searxng_service" {
+  description = "SearXNG service endpoint"
+  value = var.create_searxng ? {
+    name = "openclaw-searxng"
+    port = var.searxng_port
+    url  = "http://openclaw-searxng.${var.namespace}.svc.cluster.local:${var.searxng_port}"
+  } : null
+}

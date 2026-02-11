@@ -6,6 +6,10 @@ resource "random_id" "browserless_token" {
   byte_length = 32
 }
 
+resource "random_id" "searxng_secret" {
+  byte_length = 32
+}
+
 # Use dedicated kubernetes_secret for Secret (better provider support)
 resource "kubernetes_secret" "openclaw_config" {
   metadata {
@@ -104,4 +108,43 @@ resource "kubernetes_manifest" "browserless_deployment" {
 resource "kubernetes_manifest" "browserless_service" {
   count    = var.create_browserless ? 1 : 0
   manifest = yamldecode(local.browserless_service_patched)
+}
+
+# SearXNG Secret
+resource "kubernetes_secret" "openclaw_searxng" {
+  count = var.create_searxng ? 1 : 0
+
+  metadata {
+    name      = "openclaw-searxng"
+    namespace = var.namespace
+    labels = {
+      app = "openclaw"
+    }
+  }
+
+  type = "Opaque"
+  data = {
+    SEARXNG_SECRET = local.searxng_secret
+  }
+}
+
+# SearXNG PVCs (only created when not using hostPath)
+resource "kubernetes_manifest" "searxng_config_pvc" {
+  count    = var.create_searxng && !var.use_hostpath ? 1 : 0
+  manifest = yamldecode(local.searxng_config_pvc)
+}
+
+resource "kubernetes_manifest" "searxng_data_pvc" {
+  count    = var.create_searxng && !var.use_hostpath ? 1 : 0
+  manifest = yamldecode(local.searxng_data_pvc)
+}
+
+resource "kubernetes_manifest" "searxng_deployment" {
+  count    = var.create_searxng ? 1 : 0
+  manifest = yamldecode(local.searxng_deployment_final)
+}
+
+resource "kubernetes_manifest" "searxng_service" {
+  count    = var.create_searxng ? 1 : 0
+  manifest = yamldecode(local.searxng_service_patched)
 }
