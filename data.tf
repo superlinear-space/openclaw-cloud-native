@@ -233,30 +233,12 @@ EOF
 ${local.additional_volume_mount_yaml}
 EOF
   ) : local.gateway_deployment_with_fix_permissions
-
-  # Also add volume mounts to init containers
-  gateway_deployment_with_additional_init_mounts = length(var.gateway_additional_hostpath_mounts) > 0 ? replace(
-    local.gateway_deployment_with_additional_mounts,
-    # Add additional volume mounts for setup-directories init container
-    "      - name: setup-directories\n        image: ${var.busybox_image}\n        command: [\"sh\", \"-c\", \"mkdir -p /home/node/.openclaw /home/node/.openclaw/workspace\"]\n        volumeMounts:\n        - name: openclaw-config\n          mountPath: /home/node/.openclaw\n        - name: openclaw-workspace\n          mountPath: /home/node/.openclaw/workspace",
-    <<EOF
-      - name: setup-directories
-        image: ${var.busybox_image}
-        command: ["sh", "-c", "mkdir -p /home/node/.openclaw /home/node/.openclaw/workspace"]
-        volumeMounts:
-        - name: openclaw-config
-          mountPath: /home/node/.openclaw
-        - name: openclaw-workspace
-          mountPath: /home/node/.openclaw/workspace
-${local.additional_volume_mount_yaml}
-EOF
-  ) : local.gateway_deployment_with_additional_mounts
 }
 
 # Apply namespace LAST to avoid breaking PVC claim replacements
 locals {
   gateway_deployment_final = replace(
-    local.gateway_deployment_with_additional_init_mounts,
+    local.gateway_deployment_with_additional_mounts,
     "namespace: openclaw",
     "namespace: ${var.namespace}"
   )
