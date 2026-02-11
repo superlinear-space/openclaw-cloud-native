@@ -94,6 +94,28 @@ This eliminates the need to manually configure permissions on host nodes.
 service_type = "NodePort"  # Options: LoadBalancer, NodePort, ClusterIP
 ```
 
+### Gateway Ports
+
+```hcl
+gateway_port = 18789  # Gateway service port
+bridge_port  = 18790  # Bridge service port
+```
+
+### Additional hostPath Mounts
+
+For mounting additional host directories into the gateway container:
+
+```hcl
+gateway_additional_hostpath_mounts = [
+  {
+    name       = "custom-tools"
+    host_path  = "/opt/tools"
+    mount_path = "/tools"
+    read_only  = true
+  }
+]
+```
+
 ### Claude AI Integration (Optional)
 
 ```hcl
@@ -133,6 +155,50 @@ The browserless service will be available within the cluster at:
 To retrieve the token:
 ```bash
 terraform output browserless_token
+```
+
+### SearXNG Local Search Engine (Optional)
+
+[SearXNG](https://github.com/searxng/searxng) is a privacy-respecting, self-hosted metasearch engine that aggregates results from multiple search engines.
+
+**Enable SearXNG:**
+
+```hcl
+create_searxng = true
+```
+
+**Storage Options:**
+
+**PVC (default for production):**
+```hcl
+create_searxng = true
+searxng_config_storage_size = "100Mi"
+searxng_data_storage_size   = "500Mi"
+```
+
+**HostPath (for development):**
+```hcl
+create_searxng = true
+use_hostpath = true
+searxng_config_hostpath = "/var/lib/openclaw/searxng/config"
+searxng_data_hostpath   = "/var/lib/openclaw/searxng/data"
+```
+
+**Accessing SearXNG:**
+
+Once deployed, SearXNG is available within the cluster at:
+```
+http://openclaw-searxng.<namespace>.svc.cluster.local:8080
+```
+
+Or from other pods in the same namespace:
+```
+http://openclaw-searxng:8080
+```
+
+The SearXNG secret key is auto-generated. Retrieve it with:
+```bash
+terraform output searxng_secret
 ```
 
 ## Run Onboarding
@@ -265,6 +331,9 @@ terraform output workspace_pvc       # openclaw-workspace-pvc
 # hostPath outputs (null if using PVC):
 terraform output config_hostpath
 terraform output workspace_hostpath
+# Optional services:
+terraform output browserless_token   # [sensitive] Browserless auth token
+terraform output searxng_secret      # [sensitive] SearXNG secret key
 ```
 
 ## Provider Setup
@@ -355,6 +424,27 @@ config_hostpath         = "/var/lib/openclaw/config"
 workspace_hostpath      = "/var/lib/openclaw/workspace"
 create_onboarding_job   = false  # Set to true for initial setup workflow
 create_gateway_deployment = true
+```
+
+### With Optional Services
+
+```hcl
+# terraform.tfvars (with browserless and SearXNG)
+namespace               = "openclaw"
+container_image         = "ghcr.io/openclaw/openclaw:latest"
+gateway_replicas        = 1
+service_type            = "LoadBalancer"
+
+# Enable browserless Chrome
+create_browserless      = true
+browserless_replicas    = 1
+browserless_shm_size    = "2Gi"
+
+# Enable SearXNG search engine
+create_searxng          = true
+searxng_replicas        = 1
+searxng_config_storage_size = "100Mi"
+searxng_data_storage_size   = "500Mi"
 ```
 
 ## Documentation

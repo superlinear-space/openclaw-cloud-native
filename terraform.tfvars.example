@@ -4,8 +4,11 @@ container_image = "ghcr.io/openclaw/openclaw:latest"
 busybox_image = "busybox:latest"
 
 # Gateway Settings
+# gateway_token = ""  # Auto-generated if empty
 gateway_replicas = 1
 gateway_bind = "lan"
+# gateway_port = 18789
+# bridge_port = 18790
 service_type = "LoadBalancer"
 
 # Storage (PVC for production)
@@ -23,6 +26,19 @@ workspace_storage_size = "5Gi"
 node_selector = {
   "openclaw-enabled" = "true"
 }
+
+# Kubernetes Configuration
+# kubeconfig_path = "~/.kube/config"
+
+# Additional hostPath mounts for gateway
+# gateway_additional_hostpath_mounts = [
+#   {
+#     name       = "extra-mount"
+#     host_path  = "/host/path"
+#     mount_path = "/container/path"
+#     read_only  = true
+#   }
+# ]
 
 # Optional: Claude AI Integration
 claude_ai_session_key = ""

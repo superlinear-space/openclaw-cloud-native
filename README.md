@@ -174,6 +174,8 @@ kubectl apply -f gateway-service.yaml
 | `searxng_data_storage_size` | `500Mi` | SearXNG data PVC storage |
 | `searxng_config_hostpath` | `/var/lib/openclaw/searxng/config` | Host path for SearXNG config (if hostPath) |
 | `searxng_data_hostpath` | `/var/lib/openclaw/searxng/data` | Host path for SearXNG data (if hostPath) |
+| `gateway_additional_hostpath_mounts` | `[]` | Additional hostPath mounts for gateway deployment |
+| `kubeconfig_path` | `~/.kube/config` | Path to kubeconfig file |
 
 ### Node Scheduling
 
