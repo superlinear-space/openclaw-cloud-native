@@ -86,3 +86,20 @@ output "searxng_service" {
     url  = "http://openclaw-searxng.${var.namespace}.svc.cluster.local:${var.searxng_port}"
   } : null
 }
+
+output "qdrant_api_key" {
+  description = "Qdrant API key"
+  value       = var.create_qdrant ? local.qdrant_api_key : null
+  sensitive   = true
+}
+
+output "qdrant_service" {
+  description = "Qdrant service endpoint"
+  value = var.create_qdrant ? {
+    name      = "openclaw-qdrant"
+    http_port = var.qdrant_http_port
+    grpc_port = var.qdrant_grpc_port
+    http_url  = "http://openclaw-qdrant.${var.namespace}.svc.cluster.local:${var.qdrant_http_port}"
+    grpc_url  = "http://openclaw-qdrant.${var.namespace}.svc.cluster.local:${var.qdrant_grpc_port}"
+  } : null
+}

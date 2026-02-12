@@ -13,6 +13,7 @@ openclaw-cloud-native/
 │   ├── core/                    # Core OpenClaw components
 │   ├── browserless/             # Browserless browser automation
 │   ├── searxng/                 # SearXNG search engine
+│   ├── qdrant/                  # Qdrant vector database
 │   └── bundled/                 # Generated bundled manifests
 ├── scripts/                     # Shell scripts
 └── docs/                        # Documentation
@@ -131,8 +132,10 @@ terraform output namespace
 terraform output gateway_token      # Sensitive
 terraform output browserless_token  # Sensitive
 terraform output searxng_secret     # Sensitive
+terraform output qdrant_api_key     # Sensitive
 terraform output gateway_service
 terraform output searxng_service
+terraform output qdrant_service
 ```
 
 ### Destroy
@@ -205,6 +208,16 @@ kubectl apply -f manifests/core/gateway-service.yaml
 | `searxng_data_storage_size` | `500Mi` | SearXNG data PVC storage |
 | `searxng_config_hostpath` | `/var/lib/openclaw/searxng/config` | Host path for SearXNG config (if hostPath) |
 | `searxng_data_hostpath` | `/var/lib/openclaw/searxng/data` | Host path for SearXNG data (if hostPath) |
+| `create_qdrant` | `false` | Create Qdrant deployment |
+| `qdrant_image` | `docker.io/qdrant/qdrant:latest` | Qdrant container image |
+| `qdrant_replicas` | `1` | Number of Qdrant replicas |
+| `qdrant_http_port` | `6333` | Qdrant HTTP API port |
+| `qdrant_grpc_port` | `6334` | Qdrant gRPC port |
+| `qdrant_api_key` | auto-generated | Qdrant API key for authentication |
+| `qdrant_config_storage_size` | `100Mi` | Qdrant config PVC storage |
+| `qdrant_storage_size` | `5Gi` | Qdrant data PVC storage |
+| `qdrant_config_hostpath` | `/var/lib/openclaw/qdrant/config` | Host path for Qdrant config (if hostPath) |
+| `qdrant_storage_hostpath` | `/var/lib/openclaw/qdrant/storage` | Host path for Qdrant storage (if hostPath) |
 | `gateway_additional_hostpath_mounts` | `[]` | Additional hostPath mounts for gateway deployment |
 | `kubeconfig_path` | `~/.kube/config` | Path to kubeconfig file |
 
@@ -241,6 +254,7 @@ kubectl label nodes <node-name> openclaw-enabled=true
 |-----------|-------------|
 | `manifests/browserless/` | Browserless browser automation deployment |
 | `manifests/searxng/` | SearXNG search engine deployment |
+| `manifests/qdrant/` | Qdrant vector database deployment |
 
 ### Generated
 
@@ -307,6 +321,75 @@ SearXNG configuration is stored in `/etc/searxng/settings.yml` inside the contai
 2. **Edit settings.yml** and restart the pod
 
 For more configuration options, see the [SearXNG documentation](https://docs.searxng.org/admin/settings/settings.html).
+
+## Qdrant Vector Database
+
+Qdrant is a high-performance vector database for AI applications, enabling similarity search and vector embeddings storage.
+
+### Enable Qdrant
+
+**With Terraform:**
+```bash
+cd terraform
+terraform apply -var="create_qdrant=true"
+```
+
+**Or using tfvars:**
+```hcl
+create_qdrant = true
+qdrant_replicas = 1
+```
+
+### Storage Options
+
+**PVC (default for production):**
+```hcl
+create_qdrant = true
+qdrant_config_storage_size = "100Mi"
+qdrant_storage_size = "5Gi"
+```
+
+**HostPath (for development):**
+```hcl
+create_qdrant = true
+use_hostpath = true
+qdrant_config_hostpath = "/var/lib/openclaw/qdrant/config"
+qdrant_storage_hostpath = "/var/lib/openclaw/qdrant/storage"
+```
+
+### Accessing Qdrant
+
+Once deployed, Qdrant is available within the cluster at:
+
+- **HTTP API**: `http://openclaw-qdrant.<namespace>.svc.cluster.local:6333`
+- **gRPC API**: `http://openclaw-qdrant.<namespace>.svc.cluster.local:6334`
+
+Or from other pods in the same namespace:
+- **HTTP**: `http://openclaw-qdrant:6333`
+- **gRPC**: `http://openclaw-qdrant:6334`
+
+### Qdrant Authentication
+
+Qdrant uses an API key for authentication. The API key is auto-generated and can be retrieved:
+
+```bash
+cd terraform
+terraform output qdrant_api_key
+```
+
+When making requests, include the API key in the header:
+```bash
+curl -H "api-key: YOUR_API_KEY" http://openclaw-qdrant:6333/collections
+```
+
+### Qdrant Configuration
+
+Qdrant configuration can be customized by:
+
+1. **Environment variables** - Set in the deployment
+2. **Configuration file** - Mounted at `/qdrant/config/production.yaml`
+
+For more configuration options, see the [Qdrant documentation](https://qdrant.tech/documentation/guides/configuration/).
 
 ## Tools Script
 

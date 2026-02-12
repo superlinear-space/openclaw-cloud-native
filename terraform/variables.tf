@@ -234,3 +234,64 @@ variable "searxng_data_hostpath" {
   type        = string
   default     = "/var/lib/openclaw/searxng/data"
 }
+
+# Qdrant Variables
+variable "create_qdrant" {
+  description = "Whether to create the Qdrant deployment and service"
+  type        = bool
+  default     = false
+}
+
+variable "qdrant_image" {
+  description = "Container image for Qdrant"
+  type        = string
+  default     = "docker.io/qdrant/qdrant:latest"
+}
+
+variable "qdrant_replicas" {
+  description = "Number of Qdrant replicas"
+  type        = number
+  default     = 1
+}
+
+variable "qdrant_http_port" {
+  description = "Qdrant HTTP API port"
+  type        = number
+  default     = 6333
+}
+
+variable "qdrant_grpc_port" {
+  description = "Qdrant gRPC port"
+  type        = number
+  default     = 6334
+}
+
+variable "qdrant_api_key" {
+  description = "Qdrant API key for authentication (auto-generated if empty)"
+  type        = string
+  default     = ""
+}
+
+variable "qdrant_config_storage_size" {
+  description = "Storage size for Qdrant config PVC"
+  type        = string
+  default     = "100Mi"
+}
+
+variable "qdrant_storage_size" {
+  description = "Storage size for Qdrant data PVC"
+  type        = string
+  default     = "5Gi"
+}
+
+variable "qdrant_config_hostpath" {
+  description = "Host path for Qdrant config directory (required if use_hostpath=true)"
+  type        = string
+  default     = "/var/lib/openclaw/qdrant/config"
+}
+
+variable "qdrant_storage_hostpath" {
+  description = "Host path for Qdrant storage directory (required if use_hostpath=true)"
+  type        = string
+  default     = "/var/lib/openclaw/qdrant/storage"
+}

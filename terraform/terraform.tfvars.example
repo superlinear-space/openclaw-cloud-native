@@ -69,3 +69,16 @@ create_gateway_deployment = true
 # When use_hostpath = true, SearXNG will use these paths:
 # searxng_config_hostpath = "/var/lib/openclaw/searxng/config"
 # searxng_data_hostpath = "/var/lib/openclaw/searxng/data"
+
+# Optional: Qdrant Vector Database
+# create_qdrant = false
+# qdrant_image = "docker.io/qdrant/qdrant:latest"
+# qdrant_replicas = 1
+# qdrant_http_port = 6333
+# qdrant_grpc_port = 6334
+# qdrant_api_key = ""  # Auto-generated if empty
+# qdrant_config_storage_size = "100Mi"
+# qdrant_storage_size = "5Gi"
+# When use_hostpath = true, Qdrant will use these paths:
+# qdrant_config_hostpath = "/var/lib/openclaw/qdrant/config"
+# qdrant_storage_hostpath = "/var/lib/openclaw/qdrant/storage"

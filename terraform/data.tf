@@ -12,6 +12,9 @@ locals {
   searxng_deployment_yaml     = file("${path.module}/../manifests/searxng/deployment.yaml")
   searxng_service_yaml        = file("${path.module}/../manifests/searxng/service.yaml")
   searxng_pvc_yaml            = file("${path.module}/../manifests/searxng/pvc.yaml")
+  qdrant_deployment_yaml      = file("${path.module}/../manifests/qdrant/deployment.yaml")
+  qdrant_service_yaml         = file("${path.module}/../manifests/qdrant/service.yaml")
+  qdrant_pvc_yaml             = file("${path.module}/../manifests/qdrant/pvc.yaml")
 
   # Dynamic gateway token
   gateway_token = var.gateway_token != "" ? var.gateway_token : random_id.gateway_token.hex
@@ -21,6 +24,9 @@ locals {
 
   # Dynamic searxng secret
   searxng_secret = var.searxng_secret != "" ? var.searxng_secret : random_id.searxng_secret.hex
+
+  # Dynamic qdrant API key
+  qdrant_api_key = var.qdrant_api_key != "" ? var.qdrant_api_key : random_id.qdrant_api_key.hex
 }
 
 # Generate secrets manifest with data (base64-encoded) instead of stringData
@@ -530,6 +536,135 @@ locals {
       resources = {
         requests = {
           storage = var.searxng_data_storage_size
+        }
+      }
+    }
+  })
+}
+
+# Qdrant storage configuration (supports hostPath or PVC)
+locals {
+  qdrant_storage_config = var.use_hostpath ? {
+    config_volume  = "        hostPath:\n          path: ${var.qdrant_config_hostpath}\n          type: DirectoryOrCreate"
+    storage_volume = "        hostPath:\n          path: ${var.qdrant_storage_hostpath}\n          type: DirectoryOrCreate"
+    } : {
+    config_volume  = "        persistentVolumeClaim:\n          claimName: ${var.namespace}-qdrant-config-pvc"
+    storage_volume = "        persistentVolumeClaim:\n          claimName: ${var.namespace}-qdrant-storage-pvc"
+  }
+}
+
+# Patch qdrant deployment with all variables (namespace LAST)
+locals {
+  qdrant_deployment_patched = replace(
+    replace(
+      replace(
+        replace(
+          replace(
+            replace(
+              local.qdrant_deployment_yaml,
+              "image: docker.io/qdrant/qdrant:latest",
+              "image: ${var.qdrant_image}"
+            ),
+            "        - containerPort: 6333",
+            "        - containerPort: ${var.qdrant_http_port}"
+          ),
+          "        - containerPort: 6334",
+          "        - containerPort: ${var.qdrant_grpc_port}"
+        ),
+        "replicas: 1",
+        "replicas: ${var.qdrant_replicas}"
+      ),
+      "        openclaw-enabled: \"true\"",
+      local.node_selector_yaml_str
+    ),
+    "name: http",
+    "name: http"
+  )
+}
+
+# Apply storage backend patch (hostPath or PVC)
+locals {
+  qdrant_deployment_with_storage = replace(
+    replace(
+      local.qdrant_deployment_patched,
+      "        persistentVolumeClaim:\n          claimName: openclaw-qdrant-config-pvc",
+      local.qdrant_storage_config.config_volume
+    ),
+    "        persistentVolumeClaim:\n          claimName: openclaw-qdrant-storage-pvc",
+    local.qdrant_storage_config.storage_volume
+  )
+}
+
+# Apply namespace LAST to avoid breaking other replacements
+locals {
+  qdrant_deployment_final = replace(
+    local.qdrant_deployment_with_storage,
+    "namespace: openclaw",
+    "namespace: ${var.namespace}"
+  )
+}
+
+# Generate qdrant service manifest
+locals {
+  qdrant_service_patched = yamlencode({
+    apiVersion = "v1"
+    kind       = "Service"
+    metadata = {
+      name      = "openclaw-qdrant"
+      namespace = var.namespace
+    }
+    spec = {
+      type = "ClusterIP"
+      selector = {
+        app = "openclaw-qdrant"
+      }
+      ports = [
+        {
+          port       = var.qdrant_http_port
+          targetPort = var.qdrant_http_port
+          name       = "http"
+        },
+        {
+          port       = var.qdrant_grpc_port
+          targetPort = var.qdrant_grpc_port
+          name       = "grpc"
+        }
+      ]
+    }
+  })
+}
+
+# Generate qdrant PVC manifests (only used when use_hostpath=false)
+locals {
+  qdrant_config_pvc = yamlencode({
+    apiVersion = "v1"
+    kind       = "PersistentVolumeClaim"
+    metadata = {
+      name      = "${var.namespace}-qdrant-config-pvc"
+      namespace = var.namespace
+    }
+    spec = {
+      accessModes = ["ReadWriteOnce"]
+      resources = {
+        requests = {
+          storage = var.qdrant_config_storage_size
+        }
+      }
+    }
+  })
+
+  qdrant_storage_pvc = yamlencode({
+    apiVersion = "v1"
+    kind       = "PersistentVolumeClaim"
+    metadata = {
+      name      = "${var.namespace}-qdrant-storage-pvc"
+      namespace = var.namespace
+    }
+    spec = {
+      accessModes = ["ReadWriteOnce"]
+      resources = {
+        requests = {
+          storage = var.qdrant_storage_size
         }
       }
     }

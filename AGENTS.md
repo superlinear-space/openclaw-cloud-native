@@ -40,6 +40,11 @@ openclaw-cloud-native/
 │   │   ├── service.yaml
 │   │   └── pvc.yaml
 │   │
+│   ├── qdrant/                  # Qdrant vector database
+│   │   ├── deployment.yaml
+│   │   ├── service.yaml
+│   │   └── pvc.yaml
+│   │
 │   └── bundled/                 # Generated bundled manifests
 │       └── openclaw-k8s.yaml    # (gitignored, generated)
 │
@@ -155,6 +160,7 @@ No automated linting. Verify YAML syntax with `kubectl apply --dry-run=client -f
 - **Image references**: Use `${OPENCLAW_IMAGE:-ghcr.io/openclaw/openclaw:latest}` and `${OPENCLAW_BUSYBOX_IMAGE:-busybox:1.36}`
 
 ### General Conventions
+- **Plan files**: All planning documents must be placed in `.agent/plans/` directory
 - **Secrets**: Never commit real tokens. Use placeholder `"replace-with-generated-token"`
 - **Git ignore**: Exclude `.terraform/`, `*.tfstate`, `*statefile*`, `.terraform.lock.hcl`, `manifests/bundled/openclaw-k8s.yaml`
 - **Comments**: Minimal; code should be self-documenting

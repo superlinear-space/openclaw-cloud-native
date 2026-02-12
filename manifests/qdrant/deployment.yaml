@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: openclaw-qdrant
+  namespace: openclaw
+  labels:
+    app: openclaw-qdrant
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: openclaw-qdrant
+  template:
+    metadata:
+      labels:
+        app: openclaw-qdrant
+    spec:
+      nodeSelector:
+        openclaw-enabled: "true"
+      containers:
+      - name: qdrant
+        image: docker.io/qdrant/qdrant:latest
+        env:
+        - name: QDRANT__SERVICE__API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: openclaw-qdrant
+              key: QDRANT_API_KEY
+        ports:
+        - containerPort: 6333
+          name: http
+        - containerPort: 6334
+          name: grpc
+        volumeMounts:
+        - name: qdrant-config
+          mountPath: /qdrant/config
+        - name: qdrant-storage
+          mountPath: /qdrant/storage
+      volumes:
+      - name: qdrant-config
+        persistentVolumeClaim:
+          claimName: openclaw-qdrant-config-pvc
+      - name: qdrant-storage
+        persistentVolumeClaim:
+          claimName: openclaw-qdrant-storage-pvc

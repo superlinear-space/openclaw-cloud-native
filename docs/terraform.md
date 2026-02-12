@@ -210,6 +210,59 @@ The SearXNG secret key is auto-generated. Retrieve it with:
 terraform output searxng_secret
 ```
 
+### Qdrant Vector Database (Optional)
+
+[Qdrant](https://qdrant.tech/) is a high-performance vector database for AI applications, enabling similarity search and vector embeddings storage.
+
+**Enable Qdrant:**
+
+```hcl
+create_qdrant = true
+```
+
+**Storage Options:**
+
+**PVC (default for production):**
+```hcl
+create_qdrant = true
+qdrant_config_storage_size = "100Mi"
+qdrant_storage_size        = "5Gi"
+```
+
+**HostPath (for development):**
+```hcl
+create_qdrant = true
+use_hostpath = true
+qdrant_config_hostpath  = "/var/lib/openclaw/qdrant/config"
+qdrant_storage_hostpath = "/var/lib/openclaw/qdrant/storage"
+```
+
+**Accessing Qdrant:**
+
+Once deployed, Qdrant is available within the cluster at:
+- **HTTP API**: `http://openclaw-qdrant.<namespace>.svc.cluster.local:6333`
+- **gRPC API**: `http://openclaw-qdrant.<namespace>.svc.cluster.local:6334`
+
+Or from other pods in the same namespace:
+- **HTTP**: `http://openclaw-qdrant:6333`
+- **gRPC**: `http://openclaw-qdrant:6334`
+
+**Qdrant Authentication:**
+
+Qdrant uses an API key for authentication. The API key is auto-generated. Retrieve it with:
+```bash
+terraform output qdrant_api_key
+```
+
+When making requests, include the API key in the header:
+```bash
+curl -H "api-key: YOUR_API_KEY" http://openclaw-qdrant:6333/collections
+```
+
+**Ports:**
+- HTTP API: 6333 (configurable via `qdrant_http_port`)
+- gRPC API: 6334 (configurable via `qdrant_grpc_port`)
+
 ## Run Onboarding
 
 ### Option 1: Sequential Apply (Simplest for Initial Setup)
@@ -343,6 +396,8 @@ terraform output workspace_hostpath
 # Optional services:
 terraform output browserless_token   # [sensitive] Browserless auth token
 terraform output searxng_secret      # [sensitive] SearXNG secret key
+terraform output qdrant_api_key      # [sensitive] Qdrant API key
+terraform output qdrant_service      # Qdrant service endpoint
 ```
 
 ## Provider Setup
@@ -438,7 +493,7 @@ create_gateway_deployment = true
 ### With Optional Services
 
 ```hcl
-# terraform.tfvars (with browserless and SearXNG)
+# terraform.tfvars (with browserless, SearXNG, and Qdrant)
 namespace               = "openclaw"
 container_image         = "ghcr.io/openclaw/openclaw:latest"
 gateway_replicas        = 1
@@ -454,6 +509,12 @@ create_searxng          = true
 searxng_replicas        = 1
 searxng_config_storage_size = "100Mi"
 searxng_data_storage_size   = "500Mi"
+
+# Enable Qdrant vector database
+create_qdrant           = true
+qdrant_replicas         = 1
+qdrant_config_storage_size = "100Mi"
+qdrant_storage_size     = "5Gi"
 ```
 
 ## Documentation

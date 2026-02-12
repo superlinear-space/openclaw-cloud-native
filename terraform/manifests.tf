@@ -10,6 +10,10 @@ resource "random_id" "searxng_secret" {
   byte_length = 32
 }
 
+resource "random_id" "qdrant_api_key" {
+  byte_length = 32
+}
+
 # Use dedicated kubernetes_secret for Secret (better provider support)
 resource "kubernetes_secret" "openclaw_config" {
   metadata {
@@ -147,4 +151,43 @@ resource "kubernetes_manifest" "searxng_deployment" {
 resource "kubernetes_manifest" "searxng_service" {
   count    = var.create_searxng ? 1 : 0
   manifest = yamldecode(local.searxng_service_patched)
+}
+
+# Qdrant Secret
+resource "kubernetes_secret" "openclaw_qdrant" {
+  count = var.create_qdrant ? 1 : 0
+
+  metadata {
+    name      = "openclaw-qdrant"
+    namespace = var.namespace
+    labels = {
+      app = "openclaw"
+    }
+  }
+
+  type = "Opaque"
+  data = {
+    QDRANT_API_KEY = local.qdrant_api_key
+  }
+}
+
+# Qdrant PVCs (only created when not using hostPath)
+resource "kubernetes_manifest" "qdrant_config_pvc" {
+  count    = var.create_qdrant && !var.use_hostpath ? 1 : 0
+  manifest = yamldecode(local.qdrant_config_pvc)
+}
+
+resource "kubernetes_manifest" "qdrant_storage_pvc" {
+  count    = var.create_qdrant && !var.use_hostpath ? 1 : 0
+  manifest = yamldecode(local.qdrant_storage_pvc)
+}
+
+resource "kubernetes_manifest" "qdrant_deployment" {
+  count    = var.create_qdrant ? 1 : 0
+  manifest = yamldecode(local.qdrant_deployment_final)
+}
+
+resource "kubernetes_manifest" "qdrant_service" {
+  count    = var.create_qdrant ? 1 : 0
+  manifest = yamldecode(local.qdrant_service_patched)
 }
