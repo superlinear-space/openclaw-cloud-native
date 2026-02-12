@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 echo "OpenClaw Kubernetes - Generate Single Manifest"
 echo "=============================================="
@@ -16,7 +16,7 @@ SERVICE_TYPE="${5:-LoadBalancer}"
 CONFIG_SIZE="${6:-1Gi}"
 WORKSPACE_SIZE="${7:-5Gi}"
 
-cat > "$REPO_ROOT/openclaw-k8s.yaml" <<EOF
+cat > "$REPO_ROOT/manifests/bundled/openclaw-k8s.yaml" <<EOF
 apiVersion: v1
 kind: Namespace
 metadata:
@@ -193,7 +193,7 @@ spec:
   backoffLimit: 0
 EOF
 
-echo "Generated openclaw-k8s.yaml"
+echo "Generated manifests/bundled/openclaw-k8s.yaml"
 echo ""
 echo "Configuration:"
 echo "  Namespace: $NAMESPACE"
@@ -205,7 +205,7 @@ echo "  Config Storage: $CONFIG_SIZE"
 echo "  Workspace Storage: $WORKSPACE_SIZE"
 echo ""
 echo "Apply with:"
-echo "  kubectl apply -f openclaw-k8s.yaml"
+echo "  kubectl apply -f manifests/bundled/openclaw-k8s.yaml"
 echo ""
 echo "Or use Terraform with:"
-echo "  terraform init && terraform apply"
+echo "  cd terraform && terraform init && terraform apply"

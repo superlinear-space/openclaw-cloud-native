@@ -1,17 +1,17 @@
 # Read all Kubernetes YAML files as the source of truth
 locals {
-  namespace_yaml              = file("${path.module}/namespace.yaml")
-  secrets_yaml                = file("${path.module}/secrets.yaml")
-  config_pvc_yaml             = file("${path.module}/config-pvc.yaml")
-  workspace_pvc_yaml          = file("${path.module}/workspace-pvc.yaml")
-  gateway_deployment_yaml     = file("${path.module}/gateway-deployment.yaml")
-  gateway_service_yaml        = file("${path.module}/gateway-service.yaml")
-  onboarding_job_yaml         = file("${path.module}/onboarding-job.yaml")
-  browserless_deployment_yaml = file("${path.module}/browserless-deployment.yaml")
-  browserless_service_yaml    = file("${path.module}/browserless-service.yaml")
-  searxng_deployment_yaml     = file("${path.module}/searxng-deployment.yaml")
-  searxng_service_yaml        = file("${path.module}/searxng-service.yaml")
-  searxng_pvc_yaml            = file("${path.module}/searxng-pvc.yaml")
+  namespace_yaml              = file("${path.module}/../manifests/core/namespace.yaml")
+  secrets_yaml                = file("${path.module}/../manifests/core/secrets.yaml")
+  config_pvc_yaml             = file("${path.module}/../manifests/core/config-pvc.yaml")
+  workspace_pvc_yaml          = file("${path.module}/../manifests/core/workspace-pvc.yaml")
+  gateway_deployment_yaml     = file("${path.module}/../manifests/core/gateway-deployment.yaml")
+  gateway_service_yaml        = file("${path.module}/../manifests/core/gateway-service.yaml")
+  onboarding_job_yaml         = file("${path.module}/../manifests/core/onboarding-job.yaml")
+  browserless_deployment_yaml = file("${path.module}/../manifests/browserless/deployment.yaml")
+  browserless_service_yaml    = file("${path.module}/../manifests/browserless/service.yaml")
+  searxng_deployment_yaml     = file("${path.module}/../manifests/searxng/deployment.yaml")
+  searxng_service_yaml        = file("${path.module}/../manifests/searxng/service.yaml")
+  searxng_pvc_yaml            = file("${path.module}/../manifests/searxng/pvc.yaml")
 
   # Dynamic gateway token
   gateway_token = var.gateway_token != "" ? var.gateway_token : random_id.gateway_token.hex

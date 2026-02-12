@@ -9,6 +9,9 @@ tfplan
 *.tfplan
 *statefile*
 
+# Generated files
+manifests/bundled/openclaw-k8s.yaml
+
 # Logs
 *.log
 

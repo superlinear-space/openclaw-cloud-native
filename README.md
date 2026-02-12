@@ -2,32 +2,60 @@
 
 Deploy OpenClaw to Kubernetes using the manifests in this directory. The default image is `ghcr.io/openclaw/openclaw:latest`.
 
+## Project Structure
+
+```
+openclaw-cloud-native/
+├── README.md                    # This file
+├── Makefile                     # Convenient command entry points
+├── terraform/                   # Terraform configuration
+├── manifests/                   # Kubernetes YAML manifests
+│   ├── core/                    # Core OpenClaw components
+│   ├── browserless/             # Browserless browser automation
+│   ├── searxng/                 # SearXNG search engine
+│   └── bundled/                 # Generated bundled manifests
+├── scripts/                     # Shell scripts
+└── docs/                        # Documentation
+```
+
 ## Quick Start
 
-### Option 1: Terraform (Recommended)
+### Option 1: Makefile (Recommended)
 ```bash
+make help          # Show available commands
+make init          # Initialize Terraform
+make plan          # Preview changes
+make apply         # Deploy with Terraform
+make setup         # Run interactive setup script
+make status        # Show deployment status
+make logs          # Follow gateway logs
+```
+
+### Option 2: Terraform
+```bash
+cd terraform
 terraform init
 terraform apply
 ```
 
-### Option 2: Direct kubectl
+### Option 3: Direct kubectl
 ```bash
 # Generate token
 TOKEN=$(openssl rand -hex 32)
 
 # Update token in secrets.yaml
-sed -i "s/replace-with-generated-token/$TOKEN/" secrets.yaml
+sed -i "s/replace-with-generated-token/$TOKEN/" manifests/core/secrets.yaml
 
 # Apply resources in correct order (onboarding before gateway!)
-kubectl apply -f namespace.yaml
-kubectl apply -f secrets.yaml
-kubectl apply -f config-pvc.yaml
-kubectl apply -f workspace-pvc.yaml
-kubectl apply -f onboarding-job.yaml        # Run onboarding FIRST to initialize config
+kubectl apply -f manifests/core/namespace.yaml
+kubectl apply -f manifests/core/secrets.yaml
+kubectl apply -f manifests/core/config-pvc.yaml
+kubectl apply -f manifests/core/workspace-pvc.yaml
+kubectl apply -f manifests/core/onboarding-job.yaml        # Run onboarding FIRST to initialize config
 kubectl attach -n openclaw openclaw-onboarding -i -c onboard  # Attach and complete onboarding
 kubectl delete job -n openclaw openclaw-onboarding --ignore-not-found=true  # Clean up
-kubectl apply -f gateway-deployment.yaml     # THEN deploy gateway
-kubectl apply -f gateway-service.yaml
+kubectl apply -f manifests/core/gateway-deployment.yaml     # THEN deploy gateway
+kubectl apply -f manifests/core/gateway-service.yaml
 
 # Label your nodes
 kubectl label nodes <node-name> openclaw-enabled=true
@@ -35,25 +63,25 @@ kubectl label nodes <node-name> openclaw-enabled=true
 
 **Important**: The onboarding job must run before the gateway deployment to ensure config is initialized.
 
-### Option 3: Bundled YAML
+### Option 4: Bundled YAML
 ```bash
-./generate-manifest.sh
-kubectl apply -f openclaw-k8s.yaml
+./scripts/generate-manifest.sh
+kubectl apply -f manifests/bundled/openclaw-k8s.yaml
 ```
 
-### Option 4: Interactive Setup Script (Easiest)
+### Option 5: Interactive Setup Script (Easiest)
 ```bash
 # Production (with PVCs)
-./setup.sh
+./scripts/setup.sh
 
 # Development (with hostPath - simpler, no PVCs required)
 export OPENCLAW_USE_HOSTPATH=true
 export OPENCLAW_CONFIG_HOSTPATH=/var/lib/openclaw/config
 export OPENCLAW_WORKSPACE_HOSTPATH=/var/lib/openclaw/workspace
-./setup.sh
+./scripts/setup.sh
 ```
 
-The `setup.sh` script automates the entire deployment:
+The `scripts/setup.sh` script automates the entire deployment:
 - Generates a gateway token (or uses `OPENCLAW_GATEWAY_TOKEN`)
 - Creates namespace and secrets
 - Creates PVCs (or uses hostPath if enabled) for config and workspace
@@ -91,12 +119,14 @@ service_type = "LoadBalancer"
 
 ### Run Onboarding
 ```bash
+cd terraform
 terraform apply -var="create_onboarding_job=true"
 kubectl attach -n openclaw openclaw-onboarding -i
 ```
 
 ### Outputs
 ```bash
+cd terraform
 terraform output namespace
 terraform output gateway_token      # Sensitive
 terraform output browserless_token  # Sensitive
@@ -107,6 +137,7 @@ terraform output searxng_service
 
 ### Destroy
 ```bash
+cd terraform
 terraform destroy
 ```
 
@@ -114,28 +145,28 @@ terraform destroy
 
 ### Namespace
 ```bash
-kubectl apply -f namespace.yaml
+kubectl apply -f manifests/core/namespace.yaml
 ```
 
 ### Secrets
 ```bash
-kubectl apply -f secrets.yaml
+kubectl apply -f manifests/core/secrets.yaml
 ```
 
 ### PVCs
 ```bash
-kubectl apply -f config-pvc.yaml
-kubectl apply -f workspace-pvc.yaml
+kubectl apply -f manifests/core/config-pvc.yaml
+kubectl apply -f manifests/core/workspace-pvc.yaml
 ```
 
 ### Gateway Deployment
 ```bash
-kubectl apply -f gateway-deployment.yaml
+kubectl apply -f manifests/core/gateway-deployment.yaml
 ```
 
 ### Gateway Service
 ```bash
-kubectl apply -f gateway-service.yaml
+kubectl apply -f manifests/core/gateway-service.yaml
 ```
 
 ## Configuration
@@ -192,22 +223,30 @@ kubectl label nodes <node-name> openclaw-enabled=true
 
 ## Manifests
 
+### Core Components (`manifests/core/`)
+
 | File | Description |
 |------|-------------|
 | `namespace.yaml` | Creates the `openclaw` namespace |
 | `secrets.yaml` | Holds gateway token and optional Claude keys |
-| `browserless-deployment.yaml` | Browserless deployment (optional) |
-| `browserless-service.yaml` | Browserless service (optional) |
-| `searxng-deployment.yaml` | SearXNG search engine deployment (optional) |
-| `searxng-service.yaml` | SearXNG service (optional) |
-| `searxng-pvc.yaml` | Persistent volumes for SearXNG config and data |
 | `config-pvc.yaml` | Persistent volume for config (1Gi) |
 | `workspace-pvc.yaml` | Persistent volume for workspace (5Gi) |
 | `gateway-deployment.yaml` | Gateway deployment with 1 replica |
 | `gateway-service.yaml` | LoadBalancer service exposing ports 18789/18790 |
 | `onboarding-job.yaml` | One-time job for initial onboarding |
-| `cli-job.yaml` | Template for running CLI commands as jobs |
-| `openclaw-k8s.yaml` | Bundled single-file manifest |
+
+### Optional Components
+
+| Directory | Description |
+|-----------|-------------|
+| `manifests/browserless/` | Browserless browser automation deployment |
+| `manifests/searxng/` | SearXNG search engine deployment |
+
+### Generated
+
+| File | Description |
+|------|-------------|
+| `manifests/bundled/openclaw-k8s.yaml` | Bundled single-file manifest (generated, gitignored) |
 
 ## SearXNG Local Search Engine
 
@@ -217,6 +256,7 @@ SearXNG is a privacy-respecting, self-hosted metasearch engine that aggregates r
 
 **With Terraform:**
 ```bash
+cd terraform
 terraform apply -var="create_searxng=true"
 ```
 
@@ -270,14 +310,14 @@ For more configuration options, see the [SearXNG documentation](https://docs.sea
 
 ## Tools Script
 
-Use `./tools.sh` for common operations:
+Use `./scripts/tools.sh` for common operations:
 ```bash
-./tools.sh status        # Check deployment status
-./tools.sh logs          # View gateway logs
-./tools.sh providers login
-./tools.sh providers add --provider telegram --token <token>
-./tools.sh restart       # Restart gateway
-./tools.sh delete        # Delete all resources
+./scripts/tools.sh status        # Check deployment status
+./scripts/tools.sh logs          # View gateway logs
+./scripts/tools.sh providers login
+./scripts/tools.sh providers add --provider telegram --token <token>
+./scripts/tools.sh restart       # Restart gateway
+./scripts/tools.sh delete        # Delete all resources
 ```
 
 ## Troubleshooting
@@ -285,7 +325,7 @@ Use `./tools.sh` for common operations:
 ### Pod not starting:
 ```bash
 kubectl describe pod -n openclaw -l app=openclaw-gateway
-./tools.sh logs
+./scripts/tools.sh logs
 ```
 
 ### PVC pending:
@@ -304,3 +344,4 @@ kubectl delete job openclaw-onboarding -n openclaw
 - Full docs: https://docs.openclaw.ai
 - Providers: https://docs.openclaw.ai/providers
 - Gateway configuration: https://docs.openclaw.ai/configuration
+- Terraform guide: [`docs/terraform.md`](docs/terraform.md)

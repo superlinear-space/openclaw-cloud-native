@@ -11,6 +11,7 @@ This directory contains Terraform configuration for deploying OpenClaw to Kubern
 ## Quick Start
 
 ```bash
+cd terraform
 terraform init
 terraform apply
 ```
@@ -19,6 +20,7 @@ terraform apply
 
 **For development (with HostPath - simpler):**
 ```bash
+cd terraform
 terraform init
 terraform apply -var="use_hostpath=true"
 ```
@@ -27,6 +29,7 @@ This uses host directories for storage - no PVCs required.
 
 **For production (with PVCs - recommended):**
 ```bash
+cd terraform
 terraform init
 terraform apply
 ```
@@ -458,3 +461,81 @@ searxng_data_storage_size   = "500Mi"
 - Full docs: https://docs.openclaw.ai
 - Providers: https://docs.openclaw.ai/providers
 - Gateway configuration: https://docs.openclaw.ai/configuration
+
+## Migrating from Previous Structure
+
+If you have an existing Terraform state from the previous (flat) project structure, follow these steps to migrate:
+
+### Quick Migration (Recommended)
+
+Use the Makefile target for automatic migration:
+
+```bash
+make migrate-state
+```
+
+This will:
+1. Move `terraform.tfstate` to `terraform/`
+2. Move `terraform.tfstate.backup` to `terraform/` (if exists)
+3. Move `.terraform/` directory to `terraform/`
+4. Move `.terraform.lock.hcl` to `terraform/`
+5. Move `terraform.tfvars` to `terraform/`
+6. Run `terraform init` in the new location
+
+### Option 1: Move State File (Local State)
+
+If you're using local state (default), simply move the state file to the new location:
+
+```bash
+# From the repository root
+mv terraform.tfstate terraform/
+mv terraform.tfstate.backup terraform/  # If exists
+mv .terraform terraform/                 # Move the .terraform directory
+mv .terraform.lock.hcl terraform/        # Move the lock file
+
+# Then reinitialize
+cd terraform
+terraform init
+```
+
+### Option 2: Re-initialize (Remote State)
+
+If you're using remote state (e.g., S3, Consul, Terraform Cloud):
+
+```bash
+# Navigate to the new terraform directory
+cd terraform
+
+# Initialize (will configure the backend)
+terraform init
+
+# Terraform will detect the existing remote state
+```
+
+### Option 3: Fresh State (Development/Testing)
+
+For development environments where you want to start fresh:
+
+```bash
+# From the repository root
+rm -f terraform.tfstate terraform.tfstate.backup
+rm -rf .terraform
+
+# Initialize and apply
+cd terraform
+terraform init
+terraform apply
+```
+
+**Note:** This will cause Terraform to recreate all resources. Only use this for development environments.
+
+### Verifying the Migration
+
+After migrating, verify everything is working:
+
+```bash
+cd terraform
+terraform plan
+```
+
+The plan should show "No changes" if the migration was successful.

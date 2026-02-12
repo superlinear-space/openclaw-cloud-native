@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 NAMESPACE="${OPENCLAW_NAMESPACE:-openclaw}"
 IMAGE="${OPENCLAW_IMAGE:-ghcr.io/openclaw/openclaw:latest}"
 BUSYBOX_IMAGE="${OPENCLAW_BUSYBOX_IMAGE:-busybox:latest}"
@@ -87,7 +87,7 @@ echo "Storage: $([[ "$USE_HOSTPATH" == "true" ]] && echo "hostPath ($CONFIG_HOST
 echo ""
 
 echo "==> Creating namespace..."
-kubectl apply -f "$REPO_ROOT/namespace.yaml"
+kubectl apply -f "$REPO_ROOT/manifests/core/namespace.yaml"
 
 echo "==> Updating gateway token secret..."
 cat <<EOF | kubectl apply -f -
@@ -117,8 +117,8 @@ if [[ "$USE_HOSTPATH" == "true" ]]; then
    # Create temporary hostPath-based manifests
    GATEWAY_PATCHED=$(mktemp)
    ONBOARDING_PATCHED=$(mktemp)
-   sed "s|claimName: openclaw-config-pvc|path: $CONFIG_HOSTPATH\n        type: DirectoryOrCreate|; s|claimName: openclaw-workspace-pvc|path: $WORKSPACE_HOSTPATH\n        type: DirectoryOrCreate|; s|persistentVolumeClaim:|hostPath:|" "$REPO_ROOT/gateway-deployment.yaml" > "$GATEWAY_PATCHED"
-   sed "s|claimName: openclaw-config-pvc|path: $CONFIG_HOSTPATH\n        type: DirectoryOrCreate|; s|claimName: openclaw-workspace-pvc|path: $WORKSPACE_HOSTPATH\n        type: DirectoryOrCreate|; s|persistentVolumeClaim:|hostPath:|" "$REPO_ROOT/onboarding-job.yaml" > "$ONBOARDING_PATCHED"
+   sed "s|claimName: openclaw-config-pvc|path: $CONFIG_HOSTPATH\n        type: DirectoryOrCreate|; s|claimName: openclaw-workspace-pvc|path: $WORKSPACE_HOSTPATH\n        type: DirectoryOrCreate|; s|persistentVolumeClaim:|hostPath:|" "$REPO_ROOT/manifests/core/gateway-deployment.yaml" > "$GATEWAY_PATCHED"
+   sed "s|claimName: openclaw-config-pvc|path: $CONFIG_HOSTPATH\n        type: DirectoryOrCreate|; s|claimName: openclaw-workspace-pvc|path: $WORKSPACE_HOSTPATH\n        type: DirectoryOrCreate|; s|persistentVolumeClaim:|hostPath:|" "$REPO_ROOT/manifests/core/onboarding-job.yaml" > "$ONBOARDING_PATCHED"
    
    # Add fix-permissions init container if enabled
    if [[ "$FIX_HOSTPATH_PERMISSIONS" == "true" ]]; then
@@ -149,10 +149,10 @@ PYTHON
  else
    echo "==> Storage: Using PVCs"
    echo "==> Creating PVCs..."
-   kubectl apply -f "$REPO_ROOT/config-pvc.yaml"
-   kubectl apply -f "$REPO_ROOT/workspace-pvc.yaml"
-   GATEWAY_PATCHED="$REPO_ROOT/gateway-deployment.yaml"
-   ONBOARDING_PATCHED="$REPO_ROOT/onboarding-job.yaml"
+   kubectl apply -f "$REPO_ROOT/manifests/core/config-pvc.yaml"
+   kubectl apply -f "$REPO_ROOT/manifests/core/workspace-pvc.yaml"
+   GATEWAY_PATCHED="$REPO_ROOT/manifests/core/gateway-deployment.yaml"
+   ONBOARDING_PATCHED="$REPO_ROOT/manifests/core/onboarding-job.yaml"
  fi
 
 echo ""
@@ -189,7 +189,7 @@ echo "==> Applying gateway deployment..."
 # Update both namespace and image in the patched YAML
 sed -e "s/namespace: openclaw/namespace: $NAMESPACE/" \
     -e "s|ghcr.io/openclaw/openclaw:latest|$IMAGE|" "$GATEWAY_PATCHED" | kubectl apply -f -
-kubectl apply -f "$REPO_ROOT/gateway-service.yaml"
+kubectl apply -f "$REPO_ROOT/manifests/core/gateway-service.yaml"
 
 echo "==> Waiting for gateway pod to be ready..."
 kubectl wait --namespace="$NAMESPACE" \

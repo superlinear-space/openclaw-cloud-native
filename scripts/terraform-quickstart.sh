@@ -1,6 +1,8 @@
 #!/bin/bash
 set -euo pipefail
 
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
 echo "OpenClaw Kubernetes - Terraform Quick Start"
 echo "==========================================="
 echo ""
@@ -15,6 +17,8 @@ check_cmd() {
 
 check_cmd terraform
 check_cmd kubectl
+
+cd "$REPO_ROOT/terraform"
 
 if [[ ! -f "terraform.tfvars.example" ]]; then
   echo "Error: terraform.tfvars.example not found"
@@ -50,21 +54,21 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
   
   echo ""
 echo "Next steps:"
-  echo "  1. Check pod status: kubectl get pods -n \\$(terraform output namespace)"
-  echo "  2. Check service: kubectl get svc -n \\$(terraform output namespace)"
+  echo "  1. Check pod status: kubectl get pods -n \$(terraform output namespace)"
+  echo "  2. Check service: kubectl get svc -n \$(terraform output namespace)"
   echo "  3. Run onboarding (for initial setup, use sequential applies):"
   echo "     terraform apply -var='create_onboarding_job=true' -var='create_gateway_deployment=false'"
-  echo "     kubectl attach -n \\$(terraform output namespace) openclaw-onboarding -i -c onboard"
+  echo "     kubectl attach -n \$(terraform output namespace) openclaw-onboarding -i -c onboard"
   echo "     terraform apply -var='create_onboarding_job=false' -var='create_gateway_deployment=true'"
   echo ""
   echo "  Onboarding prompts:"
   echo "    - Gateway bind: lan"
   echo "    - Gateway auth: token"
-  echo "    - Gateway token: \\$(terraform output gateway_token)"
+  echo "    - Gateway token: \$(terraform output gateway_token)"
   echo "    - Tailscale exposure: Off"
   echo "    - Install Gateway daemon: No"
   echo ""
-  echo "  Alternative: Use setup.sh for automated sequential setup"
+  echo "  Alternative: Use scripts/setup.sh for automated sequential setup"
 else
   echo "Deployment cancelled"
 fi

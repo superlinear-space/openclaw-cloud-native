@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 NAMESPACE="${OPENCLAW_NAMESPACE:-openclaw}"
 IMAGE="${OPENCLAW_IMAGE:-ghcr.io/openclaw/openclaw:latest}"
 
@@ -54,7 +54,7 @@ setup() {
   cd "$REPO_ROOT"
   
   echo "==> Creating namespace and secrets..."
-  kubectl apply -f namespace.yaml
+  kubectl apply -f "$REPO_ROOT/manifests/core/namespace.yaml"
   update_secret_token "$token"
   
   if [[ -n "${CLAUDE_AI_SESSION_KEY:-}" ]]; then
@@ -68,15 +68,15 @@ setup() {
   fi
   
   echo "==> Creating PVCs..."
-  kubectl apply -f config-pvc.yaml
-  kubectl apply -f workspace-pvc.yaml
+  kubectl apply -f "$REPO_ROOT/manifests/core/config-pvc.yaml"
+  kubectl apply -f "$REPO_ROOT/manifests/core/workspace-pvc.yaml"
   
   echo "==> Deploying gateway..."
   if [[ "$IMAGE" != "ghcr.io/openclaw/openclaw:latest" ]]; then
     kubectl set image deployment/openclaw-gateway gateway="$IMAGE" --namespace="$NAMESPACE"
   fi
-  kubectl apply -f gateway-deployment.yaml
-  kubectl apply -f gateway-service.yaml
+  kubectl apply -f "$REPO_ROOT/manifests/core/gateway-deployment.yaml"
+  kubectl apply -f "$REPO_ROOT/manifests/core/gateway-service.yaml"
   
   wait_for_pod "app=openclaw-gateway"
   
