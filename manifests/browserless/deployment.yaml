@@ -21,8 +21,6 @@ spec:
       - name: browserless
         image: ghcr.io/browserless/chromium:latest
         env:
-        - name: HOME
-          value: /home/node
         - name: TOKEN
           valueFrom:
             secretKeyRef:
