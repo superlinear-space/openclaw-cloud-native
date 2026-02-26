@@ -102,6 +102,7 @@ service_type = "NodePort"  # Options: LoadBalancer, NodePort, ClusterIP
 ```hcl
 gateway_port = 18789  # Gateway service port
 bridge_port  = 18790  # Bridge service port
+gateway_host_port = 0  # Host port to expose on node (0 = disabled)
 ```
 
 ### Additional hostPath Mounts

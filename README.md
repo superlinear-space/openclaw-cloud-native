@@ -187,6 +187,7 @@ kubectl apply -f manifests/core/gateway-service.yaml
 | `gateway_bind` | `lan` | Gateway bind mode |
 | `gateway_port` | `18789` | Gateway service port |
 | `bridge_port` | `18790` | Bridge service port |
+| `gateway_host_port` | `0` | Gateway host port to expose on node (0 = disabled) |
 | `service_type` | `LoadBalancer` | Kubernetes service type |
 | `use_hostpath` | `false` | Use hostPath instead of PVC (development) |
 | `fix_hostpath_permissions` | `true` | Auto-fix hostPath permissions (chown 1000:1000, chmod 700) |

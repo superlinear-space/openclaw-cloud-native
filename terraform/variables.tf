@@ -45,6 +45,11 @@ variable "bridge_port" {
   type        = number
   default     = 18790
 }
+variable "gateway_host_port" {
+  description = "Gateway host port to expose on the node (0 = disabled, e.g., 18789)"
+  type        = number
+  default     = 0
+}
 
 variable "service_type" {
   description = "Kubernetes service type (LoadBalancer, NodePort, ClusterIP)"

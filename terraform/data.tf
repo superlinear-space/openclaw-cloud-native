@@ -170,7 +170,11 @@ locals {
     local.node_selector_yaml_str
   )
 
-  gateway_deployment_port_fixed = local.gateway_deployment_patched
+  gateway_deployment_port_fixed = var.gateway_host_port > 0 ? replace(
+    local.gateway_deployment_patched,
+    "        - containerPort: ${var.gateway_port}",
+    "        - containerPort: ${var.gateway_port}\n          hostPort: ${var.gateway_host_port}"
+  ) : local.gateway_deployment_patched
 }
 
 # Apply hostPath/PVC storage backend patch

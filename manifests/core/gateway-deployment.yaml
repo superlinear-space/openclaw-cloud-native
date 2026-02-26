@@ -60,6 +60,7 @@ spec:
         ports:
         - containerPort: 18789
           name: gateway
+          # hostPort: 18789  # Uncomment to expose on node IP (requires nodeSelector match)
         - containerPort: 18790
           name: bridge
         volumeMounts:

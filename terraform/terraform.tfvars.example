@@ -9,6 +9,7 @@ gateway_replicas = 1
 gateway_bind = "lan"
 # gateway_port = 18789
 # bridge_port = 18790
+# gateway_host_port = 18789  # Set to expose gateway on node IP (0 = disabled)
 service_type = "LoadBalancer"
 
 # Storage (PVC for production)
