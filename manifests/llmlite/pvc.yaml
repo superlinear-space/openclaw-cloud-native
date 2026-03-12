@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: openclaw-llmlite-config-pvc
+  name: openclaw-llmlite-storage-pvc
   namespace: openclaw
 spec:
   accessModes:

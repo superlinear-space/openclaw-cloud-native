@@ -36,11 +36,10 @@ spec:
         - containerPort: 4000
           name: llmlite
         volumeMounts:
-        - name: llmlite-config
-          mountPath: /app/config.yaml
-          subPath: config.yaml
-        command: ["litellm", "--config", "/app/config.yaml", "--detailed_debug"]
+        - name: llmlite-storage
+          mountPath: /app/litellm-data
+        command: ["litellm", "--config", "/app/litellm-data/config.yaml", "--detailed_debug"]
       volumes:
-      - name: llmlite-config
+      - name: llmlite-storage
         persistentVolumeClaim:
-          claimName: openclaw-llmlite-config-pvc
+          claimName: openclaw-llmlite-storage-pvc

@@ -221,9 +221,9 @@ resource "kubernetes_secret" "openclaw_llmlite" {
 }
 
 # LiteLLM PVC (only created when not using hostPath)
-resource "kubernetes_manifest" "llmlite_config_pvc" {
+resource "kubernetes_manifest" "llmlite_storage_pvc" {
   count    = var.create_llmlite && !var.use_hostpath ? 1 : 0
-  manifest = yamldecode(local.llmlite_config_pvc)
+  manifest = yamldecode(local.llmlite_storage_pvc)
 }
 
 resource "kubernetes_manifest" "llmlite_deployment" {

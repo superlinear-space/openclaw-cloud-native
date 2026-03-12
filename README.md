@@ -434,8 +434,15 @@ llmlite_config_storage_size = "100Mi"
 ```hcl
 create_llmlite = true
 use_hostpath = true
-llmlite_config_hostpath = "/var/lib/openclaw/llmlite/config"
+llmlite_config_hostpath = "/var/lib/openclaw/llmlite/data"
 ```
+
+### Storage Purpose
+
+The PVC/hostPath stores:
+- `config.yaml` - LiteLLM configuration file (more secure than ConfigMap)
+- `prisma.db` - SQLite database (optional, for lightweight persistence)
+- Runtime data and logs
 
 ### Accessing LiteLLM
 

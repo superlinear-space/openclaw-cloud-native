@@ -686,7 +686,7 @@ locals {
   llmlite_storage_config = var.use_hostpath ? {
     config_volume = "        hostPath:\n          path: ${var.llmlite_config_hostpath}\n          type: DirectoryOrCreate"
     } : {
-    config_volume = "        persistentVolumeClaim:\n          claimName: ${var.namespace}-llmlite-config-pvc"
+    config_volume = "        persistentVolumeClaim:\n          claimName: ${var.namespace}-llmlite-storage-pvc"
   }
 }
 
@@ -715,7 +715,7 @@ locals {
 locals {
   llmlite_deployment_with_storage = replace(
     local.llmlite_deployment_patched,
-    "        persistentVolumeClaim:\n          claimName: openclaw-llmlite-config-pvc",
+    "        persistentVolumeClaim:\n          claimName: openclaw-llmlite-storage-pvc",
     local.llmlite_storage_config.config_volume
   )
 }
@@ -756,11 +756,11 @@ locals {
 
 # Generate llmlite PVC manifests (only used when use_hostpath=false)
 locals {
-  llmlite_config_pvc = yamlencode({
+  llmlite_storage_pvc = yamlencode({
     apiVersion = "v1"
     kind       = "PersistentVolumeClaim"
     metadata = {
-      name      = "${var.namespace}-llmlite-config-pvc"
+      name      = "${var.namespace}-llmlite-storage-pvc"
       namespace = var.namespace
     }
     spec = {
