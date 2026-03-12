@@ -264,6 +264,93 @@ curl -H "api-key: YOUR_API_KEY" http://openclaw-qdrant:6333/collections
 - HTTP API: 6333 (configurable via `qdrant_http_port`)
 - gRPC API: 6334 (configurable via `qdrant_grpc_port`)
 
+### LiteLLM Proxy (Optional)
+
+[LiteLLM](https://docs.litellm.ai/docs/) is a lightweight LLM proxy server that provides a unified OpenAI-compatible API for 100+ LLM providers. It supports load balancing, cost tracking, and logging.
+
+**Enable LiteLLM:**
+
+```hcl
+create_llmlite = true
+```
+
+**Storage Options:**
+
+**PVC (default for production):**
+```hcl
+create_llmlite = true
+llmlite_config_storage_size = "100Mi"
+```
+
+**HostPath (for development):**
+```hcl
+create_llmlite = true
+use_hostpath = true
+llmlite_config_hostpath = "/var/lib/openclaw/llmlite/config"
+```
+
+**Accessing LiteLLM:**
+
+Once deployed, LiteLLM is available within the cluster at:
+```
+http://openclaw-llmlite.<namespace>.svc.cluster.local:4000
+```
+
+Or from other pods in the same namespace:
+```
+http://openclaw-llmlite:4000
+```
+
+**LiteLLM Configuration:**
+
+LiteLLM requires a `config.yaml` file to define model configurations. You can create this configuration by:
+
+1. **Exec into the pod:**
+   ```bash
+   kubectl exec -it -n openclaw deployment/openclaw-llmlite -- /bin/bash
+   ```
+
+2. **Edit /app/config.yaml** with your model configurations:
+   ```yaml
+   model_list:
+     - model_name: azure-gpt-4o
+       litellm_params:
+         model: azure/<your-azure-model-deployment>
+         api_base: os.environ/AZURE_API_BASE
+         api_key: os.environ/AZURE_API_KEY
+         api_version: "2025-01-01-preview"
+   ```
+
+3. **Set environment variables:**
+   ```bash
+   export AZURE_API_BASE="https://your-resource.openai.azure.com/"
+   export AZURE_API_KEY="your-api-key"
+   ```
+
+**LiteLLM Authentication:**
+
+LiteLLM uses a master key for authentication. The master key is auto-generated. Retrieve it with:
+```bash
+terraform output llmlite_master_key
+```
+
+When making requests, include the master key in the Authorization header:
+```bash
+curl -H "Authorization: Bearer YOUR_MASTER_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"model": "azure-gpt-4o", "messages": [{"role": "user", "content": "Hello"}]}' \
+  http://openclaw-llmlite:4000/chat/completions
+```
+
+**Database Support (Optional):**
+
+LiteLLM can optionally use a database for persistent storage of logs, spend tracking, and virtual keys:
+```hcl
+llmlite_database_url = "postgresql://user:password@host:5432/litellm"
+```
+
+**Port:**
+- API: 4000 (configurable via `llmlite_port`)
 ## Run Onboarding
 
 ### Option 1: Sequential Apply (Simplest for Initial Setup)
@@ -399,6 +486,8 @@ terraform output browserless_token   # [sensitive] Browserless auth token
 terraform output searxng_secret      # [sensitive] SearXNG secret key
 terraform output qdrant_api_key      # [sensitive] Qdrant API key
 terraform output qdrant_service      # Qdrant service endpoint
+terraform output llmlite_master_key  # [sensitive] LiteLLM master key
+terraform output llmlite_service     # LiteLLM service endpoint
 ```
 
 ## Provider Setup
@@ -516,6 +605,13 @@ create_qdrant           = true
 qdrant_replicas         = 1
 qdrant_config_storage_size = "100Mi"
 qdrant_storage_size     = "5Gi"
+
+# Enable LiteLLM proxy
+create_llmlite          = true
+llmlite_replicas        = 1
+llmlite_config_storage_size = "100Mi"
+# Optional: Database URL for persistent storage
+# llmlite_database_url = "postgresql://user:password@host:5432/litellm"
 ```
 
 ## Documentation

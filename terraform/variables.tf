@@ -300,3 +300,52 @@ variable "qdrant_storage_hostpath" {
   type        = string
   default     = "/var/lib/openclaw/qdrant/storage"
 }
+
+# LiteLLM Variables
+variable "create_llmlite" {
+  description = "Whether to create the LiteLLM deployment and service"
+  type        = bool
+  default     = false
+}
+
+variable "llmlite_image" {
+  description = "Container image for LiteLLM"
+  type        = string
+  default     = "docker.litellm.ai/berriai/litellm:main-latest"
+}
+
+variable "llmlite_replicas" {
+  description = "Number of LiteLLM replicas"
+  type        = number
+  default     = 1
+}
+
+variable "llmlite_port" {
+  description = "LiteLLM service port"
+  type        = number
+  default     = 4000
+}
+
+variable "llmlite_master_key" {
+  description = "LiteLLM master key for authentication (auto-generated if empty)"
+  type        = string
+  default     = ""
+}
+
+variable "llmlite_config_storage_size" {
+  description = "Storage size for LiteLLM config PVC"
+  type        = string
+  default     = "100Mi"
+}
+
+variable "llmlite_config_hostpath" {
+  description = "Host path for LiteLLM config directory (required if use_hostpath=true)"
+  type        = string
+  default     = "/var/lib/openclaw/llmlite/config"
+}
+
+variable "llmlite_database_url" {
+  description = "Database URL for LiteLLM (optional, for persistent storage)"
+  type        = string
+  default     = ""
+}

@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: openclaw-llmlite
+  namespace: openclaw
+  labels:
+    app: openclaw-llmlite
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: openclaw-llmlite
+  template:
+    metadata:
+      labels:
+        app: openclaw-llmlite
+    spec:
+      nodeSelector:
+        openclaw-enabled: "true"
+      containers:
+      - name: llmlite
+        image: docker.litellm.ai/berriai/litellm:main-latest
+        env:
+        - name: LITELLM_MASTER_KEY
+          valueFrom:
+            secretKeyRef:
+              name: openclaw-llmlite
+              key: LITELLM_MASTER_KEY
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: openclaw-llmlite
+              key: DATABASE_URL
+              optional: true
+        ports:
+        - containerPort: 4000
+          name: llmlite
+        volumeMounts:
+        - name: llmlite-config
+          mountPath: /app/config.yaml
+          subPath: config.yaml
+        command: ["litellm", "--config", "/app/config.yaml", "--detailed_debug"]
+      volumes:
+      - name: llmlite-config
+        persistentVolumeClaim:
+          claimName: openclaw-llmlite-config-pvc

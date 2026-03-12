@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: openclaw-llmlite
+  namespace: openclaw
+spec:
+  selector:
+    app: openclaw-llmlite
+  ports:
+  - port: 4000
+    targetPort: 4000
+    name: llmlite
+  type: ClusterIP

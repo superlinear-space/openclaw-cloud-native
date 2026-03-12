@@ -15,6 +15,9 @@ locals {
   qdrant_deployment_yaml      = file("${path.module}/../manifests/qdrant/deployment.yaml")
   qdrant_service_yaml         = file("${path.module}/../manifests/qdrant/service.yaml")
   qdrant_pvc_yaml             = file("${path.module}/../manifests/qdrant/pvc.yaml")
+  llmlite_deployment_yaml     = file("${path.module}/../manifests/llmlite/deployment.yaml")
+  llmlite_service_yaml        = file("${path.module}/../manifests/llmlite/service.yaml")
+  llmlite_pvc_yaml            = file("${path.module}/../manifests/llmlite/pvc.yaml")
 
   # Dynamic gateway token
   gateway_token = var.gateway_token != "" ? var.gateway_token : random_id.gateway_token.hex
@@ -27,6 +30,9 @@ locals {
 
   # Dynamic qdrant API key
   qdrant_api_key = var.qdrant_api_key != "" ? var.qdrant_api_key : random_id.qdrant_api_key.hex
+
+  # Dynamic llmlite master key
+  llmlite_master_key = var.llmlite_master_key != "" ? var.llmlite_master_key : random_id.llmlite_master_key.hex
 }
 
 # Generate secrets manifest with data (base64-encoded) instead of stringData
@@ -669,6 +675,99 @@ locals {
       resources = {
         requests = {
           storage = var.qdrant_storage_size
+        }
+      }
+    }
+  })
+}
+
+# LiteLLM storage configuration (supports hostPath or PVC)
+locals {
+  llmlite_storage_config = var.use_hostpath ? {
+    config_volume = "        hostPath:\n          path: ${var.llmlite_config_hostpath}\n          type: DirectoryOrCreate"
+    } : {
+    config_volume = "        persistentVolumeClaim:\n          claimName: ${var.namespace}-llmlite-config-pvc"
+  }
+}
+
+# Patch llmlite deployment with all variables (namespace LAST)
+locals {
+  llmlite_deployment_patched = replace(
+    replace(
+      replace(
+        replace(
+          local.llmlite_deployment_yaml,
+          "image: docker.litellm.ai/berriai/litellm:main-latest",
+          "image: ${var.llmlite_image}"
+        ),
+        "        - containerPort: 4000",
+        "        - containerPort: ${var.llmlite_port}"
+      ),
+      "replicas: 1",
+      "replicas: ${var.llmlite_replicas}"
+    ),
+    "        openclaw-enabled: \"true\"",
+    local.node_selector_yaml_str
+  )
+}
+
+# Apply storage backend patch (hostPath or PVC)
+locals {
+  llmlite_deployment_with_storage = replace(
+    local.llmlite_deployment_patched,
+    "        persistentVolumeClaim:\n          claimName: openclaw-llmlite-config-pvc",
+    local.llmlite_storage_config.config_volume
+  )
+}
+
+# Apply namespace LAST to avoid breaking other replacements
+locals {
+  llmlite_deployment_final = replace(
+    local.llmlite_deployment_with_storage,
+    "namespace: openclaw",
+    "namespace: ${var.namespace}"
+  )
+}
+
+# Generate llmlite service manifest
+locals {
+  llmlite_service_patched = yamlencode({
+    apiVersion = "v1"
+    kind       = "Service"
+    metadata = {
+      name      = "openclaw-llmlite"
+      namespace = var.namespace
+    }
+    spec = {
+      type = "ClusterIP"
+      selector = {
+        app = "openclaw-llmlite"
+      }
+      ports = [
+        {
+          port       = var.llmlite_port
+          targetPort = var.llmlite_port
+          name       = "llmlite"
+        }
+      ]
+    }
+  })
+}
+
+# Generate llmlite PVC manifests (only used when use_hostpath=false)
+locals {
+  llmlite_config_pvc = yamlencode({
+    apiVersion = "v1"
+    kind       = "PersistentVolumeClaim"
+    metadata = {
+      name      = "${var.namespace}-llmlite-config-pvc"
+      namespace = var.namespace
+    }
+    spec = {
+      accessModes = ["ReadWriteOnce"]
+      resources = {
+        requests = {
+          storage = var.llmlite_config_storage_size
         }
       }
     }

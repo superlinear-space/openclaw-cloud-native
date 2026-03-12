@@ -83,3 +83,15 @@ create_gateway_deployment = true
 # When use_hostpath = true, Qdrant will use these paths:
 # qdrant_config_hostpath = "/var/lib/openclaw/qdrant/config"
 # qdrant_storage_hostpath = "/var/lib/openclaw/qdrant/storage"
+
+# Optional: LiteLLM Proxy (LLM Gateway)
+# create_llmlite = false
+# llmlite_image = "docker.litellm.ai/berriai/litellm:main-latest"
+# llmlite_replicas = 1
+# llmlite_port = 4000
+# llmlite_master_key = ""  # Auto-generated if empty
+# llmlite_config_storage_size = "100Mi"
+# When use_hostpath = true, LiteLLM will use this path:
+# llmlite_config_hostpath = "/var/lib/openclaw/llmlite/config"
+# Optional database URL for persistent storage (logs, spend tracking, virtual keys):
+# llmlite_database_url = "postgresql://user:password@host:5432/litellm"

@@ -14,6 +14,7 @@ openclaw-cloud-native/
 │   ├── browserless/             # Browserless browser automation
 │   ├── searxng/                 # SearXNG search engine
 │   ├── qdrant/                  # Qdrant vector database
+│   ├── llmlite/                 # LiteLLM proxy
 │   └── bundled/                 # Generated bundled manifests
 ├── scripts/                     # Shell scripts
 └── docs/                        # Documentation
@@ -133,9 +134,11 @@ terraform output gateway_token      # Sensitive
 terraform output browserless_token  # Sensitive
 terraform output searxng_secret     # Sensitive
 terraform output qdrant_api_key     # Sensitive
+terraform output llmlite_master_key # Sensitive
 terraform output gateway_service
 terraform output searxng_service
 terraform output qdrant_service
+terraform output llmlite_service
 ```
 
 ### Destroy
@@ -219,6 +222,14 @@ kubectl apply -f manifests/core/gateway-service.yaml
 | `qdrant_storage_size` | `5Gi` | Qdrant data PVC storage |
 | `qdrant_config_hostpath` | `/var/lib/openclaw/qdrant/config` | Host path for Qdrant config (if hostPath) |
 | `qdrant_storage_hostpath` | `/var/lib/openclaw/qdrant/storage` | Host path for Qdrant storage (if hostPath) |
+| `create_llmlite` | `false` | Create LiteLLM deployment |
+| `llmlite_image` | `docker.litellm.ai/berriai/litellm:main-latest` | LiteLLM container image |
+| `llmlite_replicas` | `1` | Number of LiteLLM replicas |
+| `llmlite_port` | `4000` | LiteLLM service port |
+| `llmlite_master_key` | auto-generated | LiteLLM master key for authentication |
+| `llmlite_config_storage_size` | `100Mi` | LiteLLM config PVC storage |
+| `llmlite_config_hostpath` | `/var/lib/openclaw/llmlite/config` | Host path for LiteLLM config (if hostPath) |
+| `llmlite_database_url` | `""` | Database URL for LiteLLM (optional) |
 | `gateway_additional_hostpath_mounts` | `[]` | Additional hostPath mounts for gateway deployment |
 | `kubeconfig_path` | `~/.kube/config` | Path to kubeconfig file |
 
@@ -256,6 +267,7 @@ kubectl label nodes <node-name> openclaw-enabled=true
 | `manifests/browserless/` | Browserless browser automation deployment |
 | `manifests/searxng/` | SearXNG search engine deployment |
 | `manifests/qdrant/` | Qdrant vector database deployment |
+| `manifests/llmlite/` | LiteLLM LLM proxy deployment |
 
 ### Generated
 
@@ -391,6 +403,105 @@ Qdrant configuration can be customized by:
 2. **Configuration file** - Mounted at `/qdrant/config/production.yaml`
 
 For more configuration options, see the [Qdrant documentation](https://qdrant.tech/documentation/guides/configuration/).
+
+## LiteLLM (LLMLite) Proxy
+
+LiteLLM is a lightweight LLM proxy server that provides a unified OpenAI-compatible API for 100+ LLM providers. It supports load balancing, cost tracking, and logging.
+
+### Enable LiteLLM
+
+**With Terraform:**
+```bash
+cd terraform
+terraform apply -var="create_llmlite=true"
+```
+
+**Or using tfvars:**
+```hcl
+create_llmlite = true
+llmlite_replicas = 1
+```
+
+### Storage Options
+
+**PVC (default for production):**
+```hcl
+create_llmlite = true
+llmlite_config_storage_size = "100Mi"
+```
+
+**HostPath (for development):**
+```hcl
+create_llmlite = true
+use_hostpath = true
+llmlite_config_hostpath = "/var/lib/openclaw/llmlite/config"
+```
+
+### Accessing LiteLLM
+
+Once deployed, LiteLLM is available within the cluster at:
+```
+http://openclaw-llmlite.<namespace>.svc.cluster.local:4000
+```
+
+Or from other pods in the same namespace:
+```
+http://openclaw-llmlite:4000
+```
+
+### LiteLLM Configuration
+
+LiteLLM requires a `config.yaml` file to define model configurations. You can create this configuration by:
+
+1. **Create config in PVC:**
+   ```bash
+   kubectl exec -it -n openclaw deployment/openclaw-llmlite -- /bin/bash
+   # Edit /app/config.yaml with your model configurations
+   ```
+
+2. **Example config.yaml:**
+   ```yaml
+   model_list:
+     - model_name: azure-gpt-4o
+       litellm_params:
+         model: azure/<your-azure-model-deployment>
+         api_base: os.environ/AZURE_API_BASE
+         api_key: os.environ/AZURE_API_KEY
+         api_version: "2025-01-01-preview"
+   ```
+
+3. **Set environment variables:**
+   ```bash
+   export AZURE_API_BASE="https://your-resource.openai.azure.com/"
+   export AZURE_API_KEY="your-api-key"
+   ```
+
+### LiteLLM Authentication
+
+LiteLLM uses a master key for authentication. The master key is auto-generated and can be retrieved:
+
+```bash
+cd terraform
+terraform output llmlite_master_key
+```
+
+When making requests, include the master key in the Authorization header:
+```bash
+curl -H "Authorization: Bearer YOUR_MASTER_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"model": "azure-gpt-4o", "messages": [{"role": "user", "content": "Hello"}]}' \
+  http://openclaw-llmlite:4000/chat/completions
+```
+
+### Database Support (Optional)
+
+LiteLLM can optionally use a database for persistent storage of logs, spend tracking, and virtual keys:
+
+```hcl
+llmlite_database_url = "postgresql://user:password@host:5432/litellm"
+```
+
+For more configuration options, see the [LiteLLM documentation](https://docs.litellm.ai/docs/).
 
 ## Tools Script
 

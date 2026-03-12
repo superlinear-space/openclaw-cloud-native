@@ -9,8 +9,11 @@ resource "random_id" "browserless_token" {
 resource "random_id" "searxng_secret" {
   byte_length = 32
 }
-
 resource "random_id" "qdrant_api_key" {
+  byte_length = 32
+}
+
+resource "random_id" "llmlite_master_key" {
   byte_length = 32
 }
 
@@ -190,4 +193,45 @@ resource "kubernetes_manifest" "qdrant_deployment" {
 resource "kubernetes_manifest" "qdrant_service" {
   count    = var.create_qdrant ? 1 : 0
   manifest = yamldecode(local.qdrant_service_patched)
+}
+
+# LiteLLM Secret
+resource "kubernetes_secret" "openclaw_llmlite" {
+  count = var.create_llmlite ? 1 : 0
+
+  metadata {
+    name      = "openclaw-llmlite"
+    namespace = var.namespace
+    labels = {
+      app = "openclaw"
+    }
+  }
+
+  type = "Opaque"
+  # Dynamically include DATABASE_URL only if user provided a value
+  # This prevents LiteLLM from seeing an empty DATABASE_URL and failing
+  data = merge(
+    {
+      LITELLM_MASTER_KEY = local.llmlite_master_key
+    },
+    var.llmlite_database_url != "" ? {
+      DATABASE_URL = var.llmlite_database_url
+    } : {}
+  )
+}
+
+# LiteLLM PVC (only created when not using hostPath)
+resource "kubernetes_manifest" "llmlite_config_pvc" {
+  count    = var.create_llmlite && !var.use_hostpath ? 1 : 0
+  manifest = yamldecode(local.llmlite_config_pvc)
+}
+
+resource "kubernetes_manifest" "llmlite_deployment" {
+  count    = var.create_llmlite ? 1 : 0
+  manifest = yamldecode(local.llmlite_deployment_final)
+}
+
+resource "kubernetes_manifest" "llmlite_service" {
+  count    = var.create_llmlite ? 1 : 0
+  manifest = yamldecode(local.llmlite_service_patched)
 }
