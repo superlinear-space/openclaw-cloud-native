@@ -1,0 +1,28 @@
+# LiteLLM Minimal Config - Quick Start
+# Copy this to get started quickly, then customize as needed
+
+model_list:
+  # OpenAI GPT-4o
+  - model_name: gpt-4o
+    litellm_params:
+      model: openai/gpt-4o
+      api_key: os.environ/OPENAI_API_KEY
+  
+  # OpenAI GPT-4o-mini (cheaper, faster)
+  - model_name: gpt-4o-mini
+    litellm_params:
+      model: openai/gpt-4o-mini
+      api_key: os.environ/OPENAI_API_KEY
+
+general_settings:
+  detailed_debug: true
+
+# Required environment variables:
+# - OPENAI_API_KEY: Your OpenAI API key
+# - LITELLM_MASTER_KEY: Admin key for proxy (auto-generated if not set)
+
+# Test the proxy:
+# curl -X POST http://localhost:4000/v1/chat/completions \
+#   -H "Authorization: Bearer sk-1234" \
+#   -H "Content-Type: application/json" \
+#   -d '{"model": "gpt-4o", "messages": [{"role": "user", "content": "Hello!"}]}'

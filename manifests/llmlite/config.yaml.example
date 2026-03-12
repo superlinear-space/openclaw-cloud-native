@@ -1,0 +1,203 @@
+# LiteLLM Proxy Configuration
+# This file should be stored in the PVC at /app/litellm-data/config.yaml
+# After first deployment, exec into the pod to customize this file
+
+# =============================================================================
+# MODEL LIST - Add your LLM providers here
+# =============================================================================
+model_list:
+  # ───────────────────────────────────────────────────────────────────────────
+  # OpenAI Models
+  # ───────────────────────────────────────────────────────────────────────────
+  - model_name: gpt-4o
+    litellm_params:
+      model: openai/gpt-4o
+      api_key: os.environ/OPENAI_API_KEY
+      tags: ["openai", "production"]
+    
+  - model_name: gpt-4o-mini
+    litellm_params:
+      model: openai/gpt-4o-mini
+      api_key: os.environ/OPENAI_API_KEY
+      tags: ["openai", "production"]
+    
+  - model_name: gpt-3.5-turbo
+    litellm_params:
+      model: openai/gpt-3.5-turbo
+      api_key: os.environ/OPENAI_API_KEY
+      tags: ["openai", "production"]
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # Azure OpenAI Models (Uncomment and configure if using Azure)
+  # ───────────────────────────────────────────────────────────────────────────
+  # - model_name: azure-gpt-4o
+  #   litellm_params:
+  #     model: azure/gpt-4o
+  #     api_base: os.environ/AZURE_API_BASE
+  #     api_key: os.environ/AZURE_API_KEY
+  #     api_version: "2024-02-15-preview"
+  #     tags: ["azure", "production"]
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # Anthropic Claude Models
+  # ───────────────────────────────────────────────────────────────────────────
+  # - model_name: claude-3-5-sonnet
+  #   litellm_params:
+  #     model: anthropic/claude-3-5-sonnet-20241022
+  #     api_key: os.environ/ANTHROPIC_API_KEY
+  #     tags: ["anthropic", "production"]
+  
+  # - model_name: claude-3-opus
+  #   litellm_params:
+  #     model: anthropic/claude-3-opus-20240229
+  #     api_key: os.environ/ANTHROPIC_API_KEY
+  #     tags: ["anthropic", "production"]
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # Google Vertex AI / Gemini Models
+  # ───────────────────────────────────────────────────────────────────────────
+  # - model_name: gemini-pro
+  #   litellm_params:
+  #     model: vertex_ai/gemini-pro-1.5
+  #     vertex_project: your-gcp-project
+  #     vertex_location: us-central1
+  #     tags: ["google", "production"]
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # AWS Bedrock Models
+  # ───────────────────────────────────────────────────────────────────────────
+  # - model_name: claude-3-sonnet-bedrock
+  #   litellm_params:
+  #     model: bedrock/anthropic.claude-3-sonnet-20240229-v1:0
+  #     aws_region_name: us-east-1
+  #     tags: ["aws", "production"]
+
+# =============================================================================
+# GENERAL SETTINGS
+# =============================================================================
+general_settings:
+  # Master key for authentication (also set via LITELLM_MASTER_KEY env var)
+  # master_key: sk-1234  # Uncomment to override env var
+  
+  # Enable/disable UI
+  ui_access_mode: "public"  # Options: public, private, admin_only
+  
+  # Enable/disable swagger UI
+  enable_swagger: true
+  
+  # Request timeout (in seconds)
+  request_timeout: 600
+  
+  # Drop params from client request (don't forward to LLM provider)
+  drop_params: true
+  
+  # Return max budget in key info response
+  return_max_budget: true
+
+# =============================================================================
+# LITELLM SETTINGS - Proxy behavior configuration
+# =============================================================================
+litellm_settings:
+  # Enable caching (requires Redis for production)
+  # cache: true
+  # cache_params:
+  #   type: redis
+  #   host: "redis-host"
+  #   port: 6379
+  #   password: os.environ/REDIS_PASSWORD
+  
+  # Enable verbose debug logging (disable in production)
+  detailed_debug: true
+  
+  # Set log level
+  # log_level: "INFO"  # Options: DEBUG, INFO, WARNING, ERROR, CRITICAL
+  
+  # Enable/disable fallbacks
+  # fallbacks: []
+  
+  # Enable/disable allowed fails
+  # allowed_fails: 3
+  
+  # Context window fallback (if model doesn't support context window)
+  # context_window_fallbacks: []
+
+# =============================================================================
+# ROUTER SETTINGS - Load balancing, rate limiting, fallbacks
+# =============================================================================
+router_settings:
+  # Routing strategy (default: simple_shuffle)
+  # routing_strategy: simple-shuffle
+  
+  # Rate limiting (Redis required for multi-instance)
+  # redis_host: os.environ/REDIS_HOST
+  # redis_password: os.environ/REDIS_PASSWORD
+  # redis_port: 6379
+  
+  # Enable/disable caching at router level
+  # cache_responses: true
+  
+  # Set timeout for router requests
+  # timeout: 300
+
+# =============================================================================
+# ENVIRONMENT VARIABLES REFERENCE
+# =============================================================================
+# The following environment variables should be set via Kubernetes Secrets:
+#
+# Required (uncomment based on your providers):
+# - OPENAI_API_KEY          # For OpenAI models
+# - AZURE_API_BASE          # For Azure OpenAI (e.g., https://your-resource.openai.azure.com/)
+# - AZURE_API_KEY           # For Azure OpenAI
+# - ANTHROPIC_API_KEY       # For Anthropic Claude models
+# - GOOGLE_APPLICATION_CREDENTIALS  # For Google Vertex AI (JSON key file path)
+# - AWS_ACCESS_KEY_ID       # For AWS Bedrock
+# - AWS_SECRET_ACCESS_KEY   # For AWS Bedrock
+# - REDIS_PASSWORD          # For Redis caching (optional)
+#
+# Example Kubernetes Secret:
+# ---
+# apiVersion: v1
+# kind: Secret
+# metadata:
+#   name: openclaw-llmlite
+#   namespace: openclaw
+# type: Opaque
+# data:
+#   OPENAI_API_KEY: <base64-encoded-key>
+#   LITELLM_MASTER_KEY: <base64-encoded-master-key>
+#   DATABASE_URL: sqlite:///app/litellm-data/prisma.db  # Optional
+
+# =============================================================================
+# USAGE EXAMPLES
+# =============================================================================
+# 
+# 1. Simple Chat Completion:
+#    curl -X POST http://openclaw-llmlite:4000/v1/chat/completions \
+#      -H "Authorization: Bearer sk-1234" \
+#      -H "Content-Type: application/json" \
+#      -d '{
+#        "model": "gpt-4o",
+#        "messages": [{"role": "user", "content": "Hello!"}]
+#      }'
+#
+# 2. Create Virtual Key (requires database):
+#    curl -X POST http://openclaw-llmlite:4000/key/generate \
+#      -H "Authorization: Bearer sk-1234" \
+#      -H "Content-Type: application/json" \
+#      -d '{
+#        "models": ["gpt-4o", "gpt-4o-mini"],
+#        "max_budget": 100
+#      }'
+#
+# 3. Check Key Info:
+#    curl http://openclaw-llmlite:4000/key/info?key=<your-key> \
+#      -H "Authorization: Bearer sk-1234"
+#
+# =============================================================================
+# ADDITIONAL RESOURCES
+# =============================================================================
+# - Full config documentation: https://docs.litellm.ai/docs/proxy/configs
+# - Model routing: https://docs.litellm.ai/docs/routing-load-balancing
+# - Caching: https://docs.litellm.ai/docs/proxy/caching
+# - Virtual Keys: https://docs.litellm.ai/docs/proxy/virtual_keys
+# - Admin UI: https://docs.litellm.ai/docs/proxy/ui
