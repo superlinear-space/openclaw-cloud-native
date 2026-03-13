@@ -17,6 +17,12 @@ resource "random_id" "llmlite_master_key" {
   byte_length = 32
 }
 
+resource "random_bytes" "llmlite_salt_key" {
+  count  = var.llmlite_salt_key == "" ? 1 : 0
+  length = 32
+}
+
+
 # Use dedicated kubernetes_secret for Secret (better provider support)
 resource "kubernetes_secret" "openclaw_config" {
   metadata {
@@ -213,6 +219,7 @@ resource "kubernetes_secret" "openclaw_llmlite" {
   data = merge(
     {
       LITELLM_MASTER_KEY = local.llmlite_master_key
+      LITELLM_SALT_KEY   = local.llmlite_salt_key
     },
     var.llmlite_database_url != "" ? {
       DATABASE_URL = var.llmlite_database_url

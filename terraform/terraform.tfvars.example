@@ -95,3 +95,9 @@ create_gateway_deployment = true
 # llmlite_config_hostpath = "/var/lib/openclaw/llmlite/data"
 # Optional database URL for persistent storage (logs, spend tracking, virtual keys):
 # llmlite_database_url = "postgresql://user:password@host:5432/litellm"
+#
+# CRITICAL: Database Encryption Key (MUST be set before adding any models)
+# This key encrypts sensitive data (API keys, credentials) in the database.
+# WARNING: Once set, NEVER change this key or all encrypted data will be unrecoverable!
+# Generate with: openssl rand -base64 32
+# llmlite_salt_key = ""  # Auto-generated if empty (NOT recommended for production)

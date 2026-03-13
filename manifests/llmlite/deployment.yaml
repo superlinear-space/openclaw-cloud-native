@@ -26,6 +26,11 @@ spec:
             secretKeyRef:
               name: openclaw-llmlite
               key: LITELLM_MASTER_KEY
+        - name: LITELLM_SALT_KEY
+          valueFrom:
+            secretKeyRef:
+              name: openclaw-llmlite
+              key: LITELLM_SALT_KEY
         - name: DATABASE_URL
           valueFrom:
             secretKeyRef:

@@ -349,3 +349,10 @@ variable "llmlite_database_url" {
   type        = string
   default     = ""
 }
+
+variable "llmlite_salt_key" {
+  description = "Salt key for LiteLLM database encryption (required for encrypting sensitive data like API keys)"
+  type        = string
+  default     = ""
+  sensitive   = true
+}

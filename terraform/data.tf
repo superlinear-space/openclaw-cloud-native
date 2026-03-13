@@ -33,6 +33,9 @@ locals {
 
   # Dynamic llmlite master key
   llmlite_master_key = var.llmlite_master_key != "" ? var.llmlite_master_key : random_id.llmlite_master_key.hex
+
+  # Dynamic llmlite salt key (for database encryption)
+  llmlite_salt_key = var.llmlite_salt_key != "" ? var.llmlite_salt_key : base64encode(random_bytes.llmlite_salt_key[0].hex)
 }
 
 # Generate secrets manifest with data (base64-encoded) instead of stringData
@@ -240,7 +243,7 @@ locals {
           type: DirectoryOrCreate
 ${local.additional_volume_yaml}
 EOF
-    ) : replace(
+      ) : replace(
       local.gateway_deployment_with_fix_permissions,
       # PVC mode: workspace volume uses persistentVolumeClaim
       "      - name: openclaw-workspace\n        persistentVolumeClaim:\n          claimName: ${var.namespace}-workspace-pvc",

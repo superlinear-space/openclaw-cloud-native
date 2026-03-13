@@ -96,6 +96,7 @@ Set these via Kubernetes Secret `openclaw-llmlite`:
 | Variable | Description | Required |
 |----------|-------------|----------|
 | `LITELLM_MASTER_KEY` | Admin key for proxy | Auto-generated |
+| `LITELLM_SALT_KEY` | Salt key for database encryption (encrypts API keys & credentials) | Auto-generated (required for encryption) |
 | `OPENAI_API_KEY` | OpenAI API key | For OpenAI models |
 | `AZURE_API_BASE` | Azure OpenAI endpoint | For Azure models |
 | `AZURE_API_KEY` | Azure OpenAI key | For Azure models |
@@ -111,6 +112,17 @@ kubectl create secret generic openclaw-llmlite -n openclaw \
   --from-literal=OPENAI_API_KEY="sk-..." \
   --from-literal=DATABASE_URL="sqlite:///app/litellm-data/prisma.db"
 ```
+### Example Secret Creation
+```bash
+# Create secret with all keys
+kubectl create secret generic openclaw-llmlite -n openclaw \
+  --from-literal=LITELLM_MASTER_KEY="sk-1234" \
+  --from-literal=LITELLM_SALT_KEY="$(openssl rand -base64 32)" \
+  --from-literal=OPENAI_API_KEY="sk-..." \
+  --from-literal=DATABASE_URL="postgresql://user:pass@host:5432/litellm"
+```
+
+⚠️ **Important**: `LITELLM_SALT_KEY` must be set **before** adding any models. Once set, do not change it or encrypted data will become unrecoverable.
 
 ---
 
@@ -138,17 +150,33 @@ kubectl exec -it deployment/openclaw-llmlite -n openclaw -- \
 kubectl logs deployment/openclaw-llmlite -n openclaw | grep -i "database"
 ```
 
+### Database Encryption
+
+LiteLLM supports encryption of sensitive data (API keys, credentials) at rest using `LITELLM_SALT_KEY`:
+
+**What gets encrypted:**
+- ✅ LLM API keys
+- ✅ Provider credentials
+- ✅ Configuration secrets
+
+**What is NOT encrypted:**
+- ❌ Spend logs (request/response data)
+- ❌ Audit logs
+- ❌ User/team metadata
+
+**Enable encryption in Terraform:**
+```hcl
+# terraform.tfvars
+create_llmlite = true
+llmlite_database_url = "postgresql://user:pass@host:5432/litellm"
+llmlite_salt_key = "$(openssl rand -base64 32)"  # Generate once, store securely
+```
+
+⚠️ **Critical**: Set `LITELLM_SALT_KEY` **before** adding any models. Never change it after initial setup.
+
+For enhanced security, consider using external secret managers (AWS Secrets Manager, HashiCorp Vault) via LiteLLM's `key_management_system` setting.
+
 ### SQLite vs PostgreSQL
-
-| Feature | SQLite | PostgreSQL |
-|---------|--------|------------|
-| Setup | ✅ Automatic | ⚠️ Requires external DB |
-| Persistence | ✅ File-based | ✅ Server-based |
-| Concurrent Writes | ❌ Limited | ✅ Full support |
-| Max Size | ~10GB | TB+ |
-| Best For | Dev/Test, Small Prod | Production |
-
----
 
 ## Common Configurations
 
