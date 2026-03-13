@@ -508,6 +508,19 @@ LiteLLM can optionally use a database for persistent storage of logs, spend trac
 llmlite_database_url = "postgresql://user:password@host:5432/litellm"
 ```
 
+### Exposing LiteLLM on Node IP (Optional)
+
+By default, LiteLLM is only accessible within the cluster. To expose it on the node's IP address:
+
+```hcl
+# In terraform.tfvars
+llmlite_host_port = 4000  # 0 = disabled (default), >0 = expose on node IP
+```
+
+After applying, access LiteLLM at `http://<node-ip>:4000`.
+
+**Note:** Requires the `openclaw-enabled: "true"` node selector to match your node.
+
 For more configuration options, see the [LiteLLM documentation](https://docs.litellm.ai/docs/).
 
 ## Tools Script

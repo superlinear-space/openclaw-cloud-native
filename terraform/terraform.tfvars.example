@@ -89,6 +89,7 @@ create_gateway_deployment = true
 # llmlite_image = "docker.litellm.ai/berriai/litellm:main-latest"
 # llmlite_replicas = 1
 # llmlite_port = 4000
+# llmlite_host_port = 0  # 0 = disabled, >0 = expose on node (e.g., 4000)
 # llmlite_master_key = ""  # Auto-generated if empty
 # llmlite_config_storage_size = "100Mi"
 # When use_hostpath = true, LiteLLM will use this path:

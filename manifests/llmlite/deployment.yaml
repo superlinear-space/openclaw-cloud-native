@@ -40,6 +40,7 @@ spec:
         ports:
         - containerPort: 4000
           name: llmlite
+          # hostPort: 4000  # Uncomment to expose on node IP (requires nodeSelector match)
         volumeMounts:
         - name: llmlite-storage
           mountPath: /app/litellm-data

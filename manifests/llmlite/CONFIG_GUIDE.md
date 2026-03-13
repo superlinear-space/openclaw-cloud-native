@@ -249,13 +249,35 @@ kubectl port-forward deployment/openclaw-llmlite -n openclaw 4000:4000
 # Open browser: http://localhost:4000
 # Login with master key
 ```
+### Exposing on Node IP
 
-Features:
-- Create/manage virtual keys
-- View usage analytics
-- Set budgets and rate limits
-- Monitor model performance
+To expose LiteLLM on the node's IP address (for external access without LoadBalancer):
 
+**Option 1: Using Terraform**
+```hcl
+# terraform.tfvars
+llmlite_host_port = 4000  # Expose on node IP:port
+```
+
+**Option 2: Manual YAML Edit**
+```yaml
+# manifests/llmlite/deployment.yaml
+ports:
+- containerPort: 4000
+  name: llmlite
+  hostPort: 4000  # Add this line
+```
+
+**Access:** `http://<node-ip>:4000`
+
+**Requirements:**
+- Node must have label `openclaw-enabled: "true"`
+- Port 4000 must be available on the node
+- Firewall rules may need adjustment
+
+---
+
+## Admin UI
 ---
 
 ## Troubleshooting

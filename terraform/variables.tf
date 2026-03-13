@@ -326,6 +326,12 @@ variable "llmlite_port" {
   default     = 4000
 }
 
+variable "llmlite_host_port" {
+  description = "LiteLLM host port to expose on the node (0 = disabled, e.g., 4000)"
+  type        = number
+  default     = 0
+}
+
 variable "llmlite_master_key" {
   description = "LiteLLM master key for authentication (auto-generated if empty)"
   type        = string

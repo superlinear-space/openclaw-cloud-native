@@ -699,19 +699,32 @@ locals {
     replace(
       replace(
         replace(
-          local.llmlite_deployment_yaml,
-          "image: docker.litellm.ai/berriai/litellm:main-latest",
-          "image: ${var.llmlite_image}"
+          replace(
+            local.llmlite_deployment_yaml,
+            "image: docker.litellm.ai/berriai/litellm:main-latest",
+            "image: ${var.llmlite_image}"
+          ),
+          "        - containerPort: 4000",
+          "        - containerPort: ${var.llmlite_port}"
         ),
-        "        - containerPort: 4000",
-        "        - containerPort: ${var.llmlite_port}"
+        "replicas: 1",
+        "replicas: ${var.llmlite_replicas}"
       ),
-      "replicas: 1",
-      "replicas: ${var.llmlite_replicas}"
+      "        openclaw-enabled: \"true\"",
+      local.node_selector_yaml_str
     ),
-    "        openclaw-enabled: \"true\"",
-    local.node_selector_yaml_str
+    "        - containerPort: ${var.llmlite_port}",
+    local.llmlite_deployment_port_block
   )
+}
+
+# Conditionally add hostPort to llmlite deployment
+locals {
+  llmlite_deployment_port_block = var.llmlite_host_port > 0 ? format(
+    "        - containerPort: %d\n          hostPort: %d",
+    var.llmlite_port,
+    var.llmlite_host_port
+  ) : "        - containerPort: ${var.llmlite_port}"
 }
 
 # Apply storage backend patch (hostPath or PVC)

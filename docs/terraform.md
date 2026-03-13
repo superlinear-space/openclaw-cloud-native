@@ -612,7 +612,9 @@ llmlite_replicas        = 1
 llmlite_config_storage_size = "100Mi"
 # Optional: Database URL for persistent storage
 # llmlite_database_url = "postgresql://user:password@host:5432/litellm"
-```
+
+# Optional: Expose LiteLLM on node IP (0 = disabled, >0 = port number)
+# llmlite_host_port = 0
 
 ## Documentation
 
