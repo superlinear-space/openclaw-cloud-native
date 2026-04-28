@@ -103,3 +103,9 @@ output "qdrant_service" {
     grpc_url  = "http://openclaw-qdrant.${var.namespace}.svc.cluster.local:${var.qdrant_grpc_port}"
   } : null
 }
+
+output "llmlite_master_key" {
+  description = "LiteLLM master key"
+  value       = var.create_llmlite ? local.llmlite_master_key : null
+  sensitive   = true
+}
